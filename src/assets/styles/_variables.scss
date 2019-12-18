@@ -1,0 +1,218 @@
+@import "./bootstrap_convenience";
+
+// Color system
+//
+
+// custom
+
+$headline-color: #0d0d0d;
+$button-text-color: $headline-color;
+$stroke-color: $headline-color;
+
+$gray-600: #eff0f3;
+$gray-700: #e3e4e7;
+$dark: #0d0d0d;
+$black: #2a2a2a;
+
+// bs colors
+
+$red: #F1556F;
+$yellow: #FFD803;
+$blue: #029DDC;
+$green: #00AD82;
+$indigo: #5374BF;
+$cyan: #5374BF;
+
+// custom colors
+
+$sapphire: #0D2B52;
+$aliceblue: #E7F8FF;
+
+// merge colors
+
+$colors: ();
+
+$colors: map-merge((
+  "blue": $blue,
+  "indigo": $indigo,
+  "purple": $purple,
+  "pink": $pink,
+  "red": $red,
+  "orange": #ff8e3c,
+  "yellow": $yellow,
+  "green": $green,
+  "teal": $teal,
+  "cyan": $cyan,
+  "white": $white,
+  "gray": $gray-600,
+  "gray-dark": $gray-800),
+$colors);
+
+// build theme
+
+$primary: $orange;
+$secondary: $gray-600;
+$secondary-lighten: $gray-400;
+
+$theme-colors: map-merge(
+  $theme-colors,
+  (
+    "alt-primary": $indigo,
+    "secondary-light": $gray-300,
+    "primary-darken": $sapphire,
+    "primary": $primary,
+    "success": $green,
+    "secondary-lighten": $gray-400,
+    "secondary": $secondary,
+    "secondary-darken": $gray-700,
+    "dark": $dark,
+    "danger": $red,
+    "warning": $yellow,
+    "orange": $orange,
+    "info": $cyan,
+    "white": $white,
+  ),
+);
+
+// components
+//
+
+$border-color: #D9D9D9;
+
+$card-border-color: #D9D9D9;
+
+$border-radius:    3px;
+$border-radius-lg: 3px;
+$border-radius-sm: 3px;
+
+
+// forms and buttons and forms and buttons
+//
+
+$input-btn-font-size-sm: $font-size-base;
+$input-btn-font-size: $font-size-base;
+$input-btn-font-size-lg: $font-size-base;
+
+// buttons
+//
+
+$btn-line-height-sm: 1.125rem;
+$btn-line-height: 1.375rem;
+$btn-line-height-lg: 1.75rem;
+
+// modify the font-size of all the button sizes to 15px
+$btn-font-size-sm: calc(#{$input-btn-font-size-sm} - 1px);
+$btn-font-size: $btn-font-size-sm; // $input-btn-font-size;
+$btn-font-size-lg: $btn-font-size-sm; // $input-btn-font-size-lg;
+
+$btn-padding-x-sm: 0.875rem; // 14px
+$btn-padding-x: 1rem; // 16px
+$btn-padding-x-lg: 1.25rem; // 20px
+
+$btn-border-radius-lg: $border-radius-lg;
+$btn-border-radius: $border-radius;
+$btn-border-radius-sm: $border-radius-sm;
+$btn-font-weight: 500;
+
+// form controls
+//
+
+$input-line-height-sm: 1.4rem;
+$input-line-height: 1.75rem;
+// we don't care for form-control-lg in the adhub ui
+$input-line-height-lg: 1.875rem;
+
+// make normal size form control to be of the lg size
+$input-padding-y-sm: $input-btn-padding-y;
+$input-padding-y: $input-btn-padding-y-lg;
+$input-padding-y-lg: .75rem;
+
+$input-padding-x-sm: $input-btn-padding-x-lg;
+$input-padding-x: $input-btn-padding-x-lg;
+
+$input-font-size-sm: $input-btn-font-size-sm;
+$input-font-size-lg: $input-btn-font-size-lg;
+
+$input-border-radius-lg: $border-radius;
+$input-border-radius: $border-radius;
+$input-border-radius-sm: $border-radius;
+
+$input-color: $button-text-color;
+$input-border-color: $secondary;
+$input-border-width: 2px;
+$input-focus-box-shadow: none;
+$input-focus-border-color: $dark;
+$input-focus-color: $button-text-color;
+
+// Fonts
+//
+// font size, family, weight
+
+$font-size-base: 1rem;
+
+$font-family-base: "Roboto";
+
+$font-size-lg: $font-size-base;
+
+$font-weight-light: 300;
+$font-weight-normal: 400 !default;
+$font-weight-bold: 500;
+
+// headings
+//
+
+$headings-color: $headline-color;
+
+$h1-font-size: 3rem;
+$h2-font-size: 2.5rem;
+$h3-font-size: 1.75rem;
+$h4-font-size: 1.1rem;
+$h5-font-size: .875;
+$h6-font-size: .875;
+
+// Body
+//
+
+$body-color: $black;
+
+// Grid containers
+//
+
+$container-max-widths: (xl: 1470px);
+
+// Modals
+//
+
+$modal-dialog-margin-y-sm-up: 6rem;
+$modal-transition: transform .2s ease-in-out;
+
+// Links
+//
+
+$link-color: theme-color("primary");
+
+// Dropdown
+//
+
+$dropdown-link-hover-bg: $aliceblue;
+
+$dropdown-toggle-padding-vertical: 0.5rem;
+$dropdown-toggle-padding-horizontal: 0.75rem;
+
+// Lists
+//
+
+$list-group-hover-bg: $aliceblue;
+$list-group-active-bg: $primary;
+$list-group-action-active-bg: $primary;
+// $list-group-action-active-color: $white;
+
+// custom
+//
+
+$container-side-gutter-low: 15px;
+$container-side-gutter-high: 60px;
+$side-gutter-double: 30px;
+$app-navigation-height: 60px;
+$app-basic-header-height: 110px;
+$content-top-gap: 80px;

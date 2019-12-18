@@ -1,0 +1,372 @@
+@import './variables';
+
+// Override some of bootstrap's own scss, things that cannot be configured by
+// overriding its variables, defined inside _variables.scss
+// Also override component styles for vue-bootstrap
+
+// Buttons
+//
+
+// override bootstrap's buttons transition and have a lighten instead of darken
+
+@each $color, $value in $theme-colors {
+  .btn-#{$color} {
+    @include button-variant(
+      $value,
+      $value,
+      $hover-background: lighten($value, 12.5%),
+      $hover-border: lighten($value, 10%),
+      $active-background: lighten($value, 4.5%),
+      $active-border: lighten($value, 12.5%)
+    );
+  }
+}
+
+// let these buttons have a white text color on all states
+
+$variants: ('secondary', 'warning', 'danger', 'success', 'info');
+
+@each $variant in $variants {
+  .btn.btn-#{$variant} {
+    color: $white;
+    &:hover:not(.disabled), &:active:not(.disabled), &:focus:not(.disabled) {
+      color: $white;
+    }
+  }
+}
+
+// customize collapsed state of each lg button
+
+@each $name, $value in $theme-colors {
+  .btn-lg.btn-#{$name}.collapsed, .btn-lg.btn-outline-#{$name}.collapsed {
+    @include button-size($btn-padding-y, $btn-padding-x-lg, $btn-font-size-lg, $btn-line-height, $btn-border-radius-lg);
+  }
+}
+
+// customize btn-outline transitions for hover and active
+
+@each $key, $color in $theme-colors {
+  .btn.btn-outline-#{$key} {
+    color: darken($color, 16%);
+
+    &:not(.disabled):hover, &:not(.disabled):active, &:not(.disabled).active {
+      background-color: lighten($color, 26%);
+      color: darken(color-yiq($color), 0%);
+      border-color: lighten($color, 10%);
+    }
+  }
+}
+
+// danger and success colors are too bright on hover/active so set them to $dark
+
+@each $color in ('danger', 'success') {
+  .btn.btn-outline-#{$color} {
+    &:not(.disabled):hover, &:not(.disabled):active, &:not(.disabled).active {
+      $c: map-get($theme-colors, $color);
+      color: $dark;
+    }
+  }
+}
+
+// button hover/active transitions for border-color, background-color and text color
+// eg: `border-to-primary` goes to `border-color: $primary` on hover/active
+
+@each $key, $color in $theme-colors {
+  .btn, .form-control {
+    &.border-to-#{$key}, &.border-to-outline-#{$key} {
+      &:not(.disabled):hover, &:not(.disabled):active, &:not(.disabled).active, &:focus:not(.disabled) {
+        border-color: $color !important;
+      }
+    }
+  }
+}
+
+@each $key, $color in $theme-colors {
+  .btn, .form-control {
+    &.bg-to-#{$key}, &.bg-to-outline-#{$key} {
+      &:not(.disabled):hover, &:not(.disabled):active, &:not(.disabled).active {
+        background-color: $color !important;
+      }
+    }
+  }
+}
+
+@each $key, $color in $theme-colors {
+  .btn.color-to-#{$key}, .btn.color-to-outline-#{$key} {
+    &:not(.disabled):hover, &:not(.disabled):active, &:not(.disabled).active {
+      color: $color !important;
+    }
+  }
+}
+
+
+// img collapse transition
+//
+
+.img-thumbnail {
+  transition: height .1s ease;
+
+  &.collapsed {
+    transition: height .1s ease;
+  }
+}
+
+// headings
+//
+
+h1,
+.h1 {
+    font-weight: $headings-font-weight - 100; // font weight = 400
+}
+
+// bootstrap vue's dropdown, only one variant
+//
+
+.dropdown {
+  .dropdown-menu {
+    height: 0;
+    display: block;
+    overflow: none;
+    visibility: hidden;
+    width: 100%;
+    margin-top: -1px;
+    border-top-right-radius: 0;
+    border-top-left-radius: 0;
+    opacity: 0;
+    transition: transform .25s ease-out;
+    transition: opacity .15s ease-out;
+
+    &.show {
+      opacity: 1;
+      height: auto;
+      visibility: visible;
+    }
+  }
+
+  .dropdown-toggle {
+    // the padding needs to be the same as the normal size form-control
+    padding: $input-padding-y $input-padding-x-lg;
+    border-color: $secondary-lighten;
+    background: transparent !important;
+
+    &:hover:not(.disabled), &:active:not(.disabled), &:focus:not(.disabled) {
+      border-color: $primary;
+    }
+
+    // bootstrap vue's dropdown icon just wanna have fun
+    &::after {
+      display: none;
+    }
+  }
+
+    // This was removed since we are using variants with themeing
+  .dropdown-item {
+    padding: $dropdown-toggle-padding-vertical $dropdown-toggle-padding-horizontal;
+    outline: none;
+
+    &.active, &:active {
+      background-color: $primary;
+    }
+  }
+
+  .btn {
+    &.underlined {
+      @include form-control-focus();
+      @include button-outline-variant(#d9d9d9);
+    }
+  }
+}
+
+.list-group {
+  $list-group-padding-vertical: 0.5rem;
+  $list-group-padding-horizontal: 0.75rem;
+
+  .list-group-item {
+    padding: $list-group-padding-vertical $list-group-padding-horizontal;
+
+    &-action {
+      &:hover {
+        cursor: pointer;
+      }
+    }
+  }
+}
+
+// Nav pills, used on dashboard and banner preview
+//
+
+// i don't want any default padding on the nav-pills items, wtf
+.nav-pills .nav-link {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.tab-bar-nav.nav-pills .nav-link {
+  border-bottom-width: 3px;
+  border-bottom-style: solid;
+  border-bottom-color: transparent;
+  border-radius: 0;
+  color: $gray-700;
+
+  @include hover {
+    color: darken(#737780, 25%);
+  }
+}
+
+.nav-pills .nav-link.active {
+  border-bottom: 2px solid $blue;
+  border-bottom-width: 3px;
+}
+
+// Forms, and forms
+//
+
+.form-control {
+  height: unset;
+  disabled-datepicker-input {
+    background-color: $gray-200;
+  }
+}
+
+.col-form-label {
+  color: $gray-700;
+}
+
+// Rebuild the container styles so that overriden mixins can take advantage
+@if $enable-grid-classes {
+  .container {
+    @include make-container();
+    @include make-container-max-widths();
+  }
+}
+
+// Tooltips
+//
+
+.tooltip {
+  &.show {
+    opacity: 1;
+  }
+
+  .arrow {
+    &:before {
+      border-top-color: #5374BF;
+      border-bottom-color: #5374BF;
+    }
+  }
+
+  .tooltip-inner {
+    max-width: 300px;
+    border-radius: 3px;
+    background-color: #5374BF;
+  }
+}
+
+// Tables
+// used on dashboard and select case
+
+.table.adhub-table {
+  th {
+    border-top: 0 !important;
+    color: #737780;
+    border-bottom: 1px !important;
+    text-transform: uppercase;
+    font-size: 14px;
+    font-weight: 500;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -o-user-select: none;
+    outline: none;
+  }
+
+  td {
+    vertical-align: middle !important;
+  }
+
+  tr:hover {
+    cursor: pointer;
+  }
+
+  th {
+    white-space: nowrap !important;
+  }
+
+  thead>tr>th.sorting {
+    padding-right: 0;
+  }
+
+  thead>tr>th.sorting::before,
+  tfoot>tr>th.sorting::before {
+    display: none;
+  }
+
+  thead>tr>th.sorting::after,
+  tfoot>tr>th.sorting::after {
+    display: none;
+  }
+}
+
+// sizing
+//
+
+// btw i don't really know why does this doesn't work because it's already defined in bootstrap
+// at least the docs say so
+.w-auto {
+  width: auto !important;
+}
+
+// font controls
+//
+
+.form-control {
+  &.is-invalid {
+    box-shadow: none;
+    // Disables default icons placed by bootstrap for validation
+    background-image: none;
+    padding-right: 0.75rem;
+    // border-color: $gray-400;
+  }
+
+  &.is-invalid:focus {
+    box-shadow: none;
+  }
+
+  &.is-valid {
+    border-color: $gray-400;
+    // Disables default icons placed by bootstrap for validation
+    background-image: none;
+    padding-right: 0.75rem;
+  }
+
+  &.is-valid:focus {
+    box-shadow: none;
+    border-color: $primary;
+  }
+}
+
+// bootstrap modals
+//
+
+// ain t got a clue to why does bs add the padding :(
+.modal-open {
+  padding-right: 0px !important;
+}
+
+@media (min-width: 992px) {
+  .modal-lg,
+  .modal-xl {
+      max-width: 800px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .modal-xl {
+    max-width: 1140px;
+  }
+}
+
+.modal-backdrop {
+  background-color: rgba(0,0,0,.5);
+}

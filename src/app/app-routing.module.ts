@@ -1,8 +1,13 @@
+import { RouterModule, Routes } from '@angular/router';
+
+import { EditorComponent } from './editor/editor/editor.component';
+import { NewEntryRouteComponent } from './new-entry-route/new-entry-route.component';
 import { NgModule } from '@angular/core';
-import { Routes, RouterModule } from '@angular/router';
 
-
-const routes: Routes = [];
+const routes: Routes = [
+  { path: 'editor', component: EditorComponent },
+  { path: 'new/:date', component: NewEntryRouteComponent }
+];
 
 @NgModule({
   imports: [RouterModule.forRoot(routes)],

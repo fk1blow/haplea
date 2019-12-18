@@ -1,0 +1,43 @@
+
+// Bootstrap overrides
+//
+
+@mixin make-container() {
+  width: 100%;
+  margin-right: auto;
+  margin-left: auto;
+
+  @include media-breakpoint-down(sm) {
+    padding-right: $container-side-gutter-low;
+    padding-left: $container-side-gutter-low;
+  }
+
+  @include media-breakpoint-up(sm) {
+    padding-right: $container-side-gutter-high;
+    padding-left: $container-side-gutter-high;
+  }
+}
+
+// Full page colums mixins
+// used on page where you need a full page height excluding app nav and page header
+//
+
+@mixin full-page-height() {
+  height: calc(100vh - #{$app-basic-header-height} - #{$app-navigation-height});
+}
+
+@mixin full-page-cols() {
+  @include media-breakpoint-up(xl) {
+    @include full-page-height();
+  }
+}
+
+@mixin editor-columns() {
+  .col-full-auto {
+    @include full-page-cols();
+
+    @include media-breakpoint-up(xl) {
+      overflow-y: auto;
+    }
+  }
+}
