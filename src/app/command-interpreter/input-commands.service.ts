@@ -39,6 +39,6 @@ export class InputCommandsService {
           this.commandInterpreter.interpret(res.entities)
         )
       )
-      .subscribe(this.intentStrategySink$)
+      .subscribe(r => this.intentStrategySink$.next(r))
   }
 }

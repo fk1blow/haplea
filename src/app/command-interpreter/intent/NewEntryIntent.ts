@@ -9,8 +9,8 @@ export default class NewEntryIntent implements IntentCommand {
 
   get description() {
     return {
-      path: 'new',
-      created:  this.entryDate
+      path: 'expense/new', // not sure if this is an abstraction leak ok...
+      created: this.entryDate
     }
   }
 

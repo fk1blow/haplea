@@ -27,6 +27,9 @@ export class WitInterpreterService {
   constructor() { }
 
   interpret(entities: WitEntities): IntentCommand {
+    console.log('entities: ', entities);
+
+
     if (!entities.intent || entities.intent.length < 1) {
       return new UndefinedIntent()
     }

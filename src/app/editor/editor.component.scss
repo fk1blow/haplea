@@ -1,0 +1,18 @@
+.editor {
+  min-height: 3rem;
+  outline: #00ff00;
+
+  &::before {
+    position: absolute;
+    left: 0px;
+    content: '\002D';
+  }
+
+  & ::ng-deep div::before {
+    position: absolute;
+    left: 0px;
+    display: inline-block;
+    padding-right: 4px;
+    content: '\002D';
+  }
+}

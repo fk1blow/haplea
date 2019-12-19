@@ -34,6 +34,7 @@ export class AppComponent {
       .subscribe((intent: NewEntryIntent) => {
         this.router.navigate(
           [
+            // not sure if this is an abstraction leak or...
             intent.description.path,
             format(intent.description.created, 'yyyy-MM-dd')
           ]
