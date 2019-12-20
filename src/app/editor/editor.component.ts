@@ -1,7 +1,6 @@
-import { Subject } from 'rxjs';
-import { debounceTime, map } from 'rxjs/operators';
-
-import { AfterViewInit, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import {
+    AfterViewInit, Component, ElementRef, EventEmitter, OnInit, Output, ViewChild
+} from '@angular/core';
 
 @Component({
   selector: 'hap-editor',
@@ -12,22 +11,12 @@ export class EditorComponent implements OnInit, AfterViewInit {
 
   @ViewChild('editor', { static: true }) editorRef: ElementRef
 
-  editorRows$ = new Subject<string>()
+  @Output() change = new EventEmitter<string>()
 
   constructor() { }
 
   ngOnInit() {
-    document.execCommand("defaultParagraphSeparator", false, "li")
-
-    this.editorRows$
-      .pipe(
-        debounceTime(700),
-        map(text => text.split('\n')),
-        map(rows => rows.filter(r => r.length !== 0))
-      )
-      .subscribe(rows => {
-        console.log('rows: ', rows);
-      })
+    document.execCommand("defaultParagraphSeparator", false, "div")
   }
 
   ngAfterViewInit() {
@@ -35,7 +24,8 @@ export class EditorComponent implements OnInit, AfterViewInit {
   }
 
   onEditorInput(_evt: KeyboardEvent) {
-    this.editorRows$.next(this.editorRef.nativeElement.innerText)
+    const text = this.editorRef.nativeElement.innerText
+    this.change.emit(text.split('\n').filter(l => l.length !== 0))
   }
 
 }
