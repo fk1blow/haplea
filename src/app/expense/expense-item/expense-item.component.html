@@ -3,7 +3,7 @@
 <h5 *ngIf="expenseItems.length < 1" class="font-weight-light">niciun produs</h5>
 
 <h5 *ngIf="expenseItems.length" class="font-weight-light">
-  {{expenseTotalSum}} ron
+  total {{expenseTotalSum}} ron
 </h5>
 
 <hap-editor (change)="onEditorChange($event)" class="d-block mt-4"></hap-editor>
