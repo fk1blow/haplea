@@ -1,0 +1,7 @@
+<div #wrapper class="conversation d-flex flex-column-reverse align-items-start">
+  <hap-message
+    *ngFor="let message of conversation"
+    [message]="message"
+    class="conversation-item mb-4"
+  ></hap-message>
+</div>

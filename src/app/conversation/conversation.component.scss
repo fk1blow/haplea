@@ -1,0 +1,9 @@
+:host {
+  display: flex;
+  align-items: flex-end;
+}
+
+.conversation {
+  height: calc(100vh - 47px);
+  overflow-y: scroll;
+}

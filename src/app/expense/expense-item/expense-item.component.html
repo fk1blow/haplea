@@ -1,9 +1,15 @@
 <h3>{{entryDate}}</h3>
 
-<h5 *ngIf="expenseItems.length < 1" class="font-weight-light">niciun produs</h5>
+<h5 *ngIf="newExpenseItems.length < 1" class="font-weight-light">niciun produs</h5>
 
-<h5 *ngIf="expenseItems.length" class="font-weight-light">
+<h5 *ngIf="newExpenseItems.length" class="font-weight-light">
   total {{expenseTotalSum}} ron
 </h5>
 
-<hap-editor (change)="onEditorChange($event)" class="d-block mt-4"></hap-editor>
+<ul *ngIf="expense; else elseBlock" class="expense-item mt-4 list-unstyled">
+  <li *ngFor="let item of expense.items" class="list-item">{{item}}</li>
+</ul>
+
+<ng-template #elseBlock>
+  <hap-editor #editor (change)="onEditorChange($event)" class="d-block mt-4"></hap-editor>
+</ng-template>

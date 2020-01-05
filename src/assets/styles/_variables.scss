@@ -9,9 +9,10 @@ $headline-color: #0d0d0d;
 $button-text-color: $headline-color;
 $stroke-color: $headline-color;
 
-$gray-600: #eff0f3;
-$gray-700: #e3e4e7;
-$dark: #0d0d0d;
+// $gray-600: #eff0f3;
+// $gray-700: #e3e4e7;
+$gray-300: #EFF0F3;
+$dark: #33333a;
 $black: #2a2a2a;
 
 // bs colors
@@ -52,17 +53,20 @@ $colors);
 
 $primary: $orange;
 $secondary: $gray-600;
-$secondary-lighten: $gray-400;
+$secondary-light: $gray-300;
+// $secondary-lighten: $gray-200;
+// $secondary-lightest: $gray-100;
 
 $theme-colors: map-merge(
   $theme-colors,
   (
     "alt-primary": $indigo,
-    "secondary-light": $gray-300,
     "primary-darken": $sapphire,
     "primary": $primary,
     "success": $green,
-    "secondary-lighten": $gray-400,
+    "secondary-light": $gray-300,
+    // "secondary-lighten": $gray-200,
+    // "secondary-lightest": $gray-100,
     "secondary": $secondary,
     "secondary-darken": $gray-700,
     "dark": $dark,
@@ -138,11 +142,13 @@ $input-border-radius: $border-radius;
 $input-border-radius-sm: $border-radius;
 
 $input-color: $button-text-color;
-$input-border-color: $secondary;
+$input-bg: $secondary-light;
+$input-border-color: $secondary-light;
 $input-border-width: 2px;
 $input-focus-box-shadow: none;
-$input-focus-border-color: $dark;
+// $input-focus-border-color: $secondary-lighten;
 $input-focus-color: $button-text-color;
+$input-focus-bg: $secondary-light;
 
 // Fonts
 //

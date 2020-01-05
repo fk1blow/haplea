@@ -8,11 +8,16 @@ import { CommandInterpreterModule } from './command-interpreter/command-interpre
 import { CommanderModule } from './commander/commander.module';
 import { ExpenseModule } from './expense/expense.module';
 import { NewEntryRouteComponent } from './new-entry-route/new-entry-route.component';
+import { DashboardPageComponent } from './dashboard-page/dashboard-page.component';
+import { EditorModule } from './editor/editor.module';
+import { QuestionInputModule } from './question-input/question-input.module';
+import { ConversationModule } from './conversation/conversation.module';
 
 @NgModule({
   declarations: [
     AppComponent,
     NewEntryRouteComponent,
+    DashboardPageComponent,
   ],
   imports: [
     BrowserModule,
@@ -20,7 +25,10 @@ import { NewEntryRouteComponent } from './new-entry-route/new-entry-route.compon
     CommanderModule,
     HttpClientModule,
     CommandInterpreterModule,
-    ExpenseModule
+    ExpenseModule,
+    EditorModule,
+    QuestionInputModule,
+    ConversationModule
   ],
   providers: [
   ],

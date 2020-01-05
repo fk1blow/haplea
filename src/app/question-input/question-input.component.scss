@@ -1,0 +1,13 @@
+.question-input {
+  background-color: #FFFFFE;
+
+  &::placeholder {
+    font-style: italic;
+    color: #C4C4C4;
+  }
+
+  &.form-control-lg {
+    // font-size: 24px;
+    color: #00214D;
+  }
+}

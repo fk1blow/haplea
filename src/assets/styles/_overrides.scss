@@ -146,7 +146,7 @@ h1,
   .dropdown-toggle {
     // the padding needs to be the same as the normal size form-control
     padding: $input-padding-y $input-padding-x-lg;
-    border-color: $secondary-lighten;
+    // border-color: $secondary-lighten;
     background: transparent !important;
 
     &:hover:not(.disabled), &:active:not(.disabled), &:focus:not(.disabled) {

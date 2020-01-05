@@ -1,14 +1,9 @@
+<main class="container container-width-lg">
+  <hap-conversation></hap-conversation>
+</main>
 
-<div class="container">
-
-  <div class="row">
-    <section class="col-6 offset-3 pt-5">
-      <hap-commander (changed)="onCommanderInput($event)"></hap-commander>
-    </section>
-
-    <main class="col-6 offset-3 pt-5">
-      <router-outlet></router-outlet>
-    </main>
-  </div>
-
-</div>
+<footer class="border-top-only border">
+  <section class="container container-width-lg">
+    <hap-question-input></hap-question-input>
+  </section>
+</footer>

@@ -1,5 +1,12 @@
 import {
-    AfterViewInit, Component, ElementRef, EventEmitter, OnInit, Output, ViewChild
+    AfterViewInit,
+    Component,
+    ElementRef,
+    EventEmitter,
+    Input,
+    OnInit,
+    Output,
+    ViewChild
 } from '@angular/core';
 
 @Component({
@@ -9,23 +16,31 @@ import {
 })
 export class EditorComponent implements OnInit, AfterViewInit {
 
+  @Input() autofocus = false
+
   @ViewChild('editor', { static: true }) editorRef: ElementRef
 
   @Output() change = new EventEmitter<string>()
 
   constructor() { }
 
+  focus() {
+    this.editorRef.nativeElement.focus()
+  }
+
   ngOnInit() {
     document.execCommand("defaultParagraphSeparator", false, "div")
   }
 
   ngAfterViewInit() {
-    this.editorRef.nativeElement.focus()
+    this.autofocus && this.editorRef.nativeElement.focus()
   }
 
   onEditorInput(_evt: KeyboardEvent) {
     const text = this.editorRef.nativeElement.innerText
-    this.change.emit(text.split('\n').filter(l => l.length !== 0))
+    // this is too costly
+    // this.change.emit(text.split('\n').filter(l => l.length !== 0))
+    this.change.emit(text)
   }
 
 }

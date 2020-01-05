@@ -1,0 +1,11 @@
+<article *ngFor="let expense of expenses" class="expense mb-4">
+  <h3 class="mb-1 font-weight-normal">{{formatExpenseOn(expense.on)}}</h3>
+
+  <h5 class="font-weight-light text-secondary mb-3">
+    total {{expense.sum}} ron
+  </h5>
+
+  <ul class="expense-item mt-4 mb-0 list-unstyled">
+    <li *ngFor="let item of expense.items" class="list-item">{{item}}</li>
+  </ul>
+</article>
