@@ -3,6 +3,8 @@ import { Message } from '../conversation.service';
 import { ShowEntryMessageComponent } from '../show-entry-message/show-entry-message.component';
 import { InputQueryMessageComponent } from '../input-query-message/input-query-message.component';
 import { AddEntryMessageComponent } from '../add-entry-message/add-entry-message.component';
+import { SeeBeforeRelativeMessageComponent } from '../see-before-relative-message/see-before-relative-message';
+import { SeeYesterdatMessageComponent } from '../see-yesterday-message/see-yesterday.component';
 
 @Component({
   selector: 'hap-message',
@@ -37,8 +39,12 @@ export class MessageComponent implements OnInit, AfterContentInit {
         componentResolved = AddEntryMessageComponent;
         break;
 
-      case 'see-before':
-        componentResolved = ShowEntryMessageComponent;
+      case 'see-before-relative':
+        componentResolved = SeeBeforeRelativeMessageComponent;
+        break;
+
+      case 'see-yesterday':
+        componentResolved = SeeYesterdatMessageComponent;
         break;
 
       default:
@@ -48,7 +54,7 @@ export class MessageComponent implements OnInit, AfterContentInit {
 
     const xfactory = this.resolver.resolveComponentFactory(componentResolved)
     const componentRef = this.entry.createComponent(xfactory);
-    (<any>componentRef.instance).data = this.message;
+    (<any>componentRef.instance).value = this.message;
   }
 
 }

@@ -10,11 +10,11 @@ interface EntryResponse {
 }
 
 @Component({
-  selector: 'hap-show-entry-message',
-  templateUrl: './show-entry-message.component.html',
-  styleUrls: ['./show-entry-message.component.scss']
+  selector: 'hap-see-yesterday-message',
+  templateUrl: './see-yesterday.component.html',
+  styleUrls: ['./see-yesterday.component.scss']
 })
-export class ShowEntryMessageComponent implements OnInit {
+export class SeeYesterdatMessageComponent implements OnInit {
 
   @Input() value: Record<string, any>
 
@@ -23,21 +23,14 @@ export class ShowEntryMessageComponent implements OnInit {
   constructor(private http: HttpClient) { }
 
   ngOnInit() {
-    console.log('this.value: ', this.value);
-
-    const intent = this.value.data.name
-    const entities = this.value.data.entities
-    const duration = entities.duration[0]
-
     const params = new HttpParams()
-      .set('intent', intent)
-      .set('unit', duration.unit)
-      .set('value', duration.value)
+      .set('intent', 'see-yesterday')
+      .set('unit', 'day')
+      .set('value', '1')
 
     this.http.get('http://localhost:4000/api/expenses', { params })
       .subscribe((r: { data: EntryResponse[] }) => {
-        console.log('r: ', r);
-        // this.response = r.data
+        this.response = r.data
       })
   }
 

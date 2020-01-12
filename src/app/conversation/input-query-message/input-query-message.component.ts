@@ -7,7 +7,7 @@ import { Component, OnInit, Input } from '@angular/core';
 })
 export class InputQueryMessageComponent implements OnInit {
 
-  @Input() data: Record<string, any>
+  @Input() value: Record<string, any>
 
   constructor() { }
 
