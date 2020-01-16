@@ -1,15 +1,26 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { skip } from 'rxjs/operators';
-import { HttpClient } from '@angular/common/http';
 
-import  { Socket } from 'phoenix-channels'
+import { Socket } from 'phoenix-channels'
 
 export interface Message {
   id: number
   body: string
-  data: Record<string, any>
+  data: MessageData
 }
+
+export interface MessageData {
+  confidence: number | null
+  entities: MessageEntities | null
+  name: string
+}
+
+export interface MessageEntities {
+  [key: string]: Record<string, any>[]
+}
+
+export type ConversationMessage = Message
 
 type ConversationInput = string
 
@@ -28,7 +39,7 @@ export class ConversationService {
 
   private messages$ = new BehaviorSubject<Message[]>([])
 
-  constructor(private http: HttpClient) {
+  constructor() {
     this.socket.connect()
 
     this.lobbyChannel.join()
@@ -57,7 +68,7 @@ export class ConversationService {
     this.lobbyChannel.push('conversation:message:post', { body: input })
   }
 
-  pushNewEntry(input: string) {
+  pushNewEntry(input: Record<string, any>) {
     this.lobbyChannel.push('conversation:expense:create', { body: input })
   }
 

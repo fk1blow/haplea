@@ -5,5 +5,5 @@
 
 .conversation {
   height: calc(100vh - 47px);
-  overflow-y: scroll;
+  overflow-y: auto;
 }

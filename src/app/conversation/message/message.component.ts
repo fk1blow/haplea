@@ -1,9 +1,14 @@
-import { Component, OnInit, Input, ViewChild, ViewContainerRef, AfterViewInit, AfterContentInit, ComponentFactoryResolver } from '@angular/core';
-import { Message } from '../conversation.service';
-import { ShowEntryMessageComponent } from '../show-entry-message/show-entry-message.component';
-import { InputQueryMessageComponent } from '../input-query-message/input-query-message.component';
+import {
+    AfterContentInit, Component, ComponentFactoryResolver, Input, OnInit, ViewChild,
+    ViewContainerRef
+} from '@angular/core';
+
 import { AddEntryMessageComponent } from '../add-entry-message/add-entry-message.component';
-import { SeeBeforeRelativeMessageComponent } from '../see-before-relative-message/see-before-relative-message';
+import { Message } from '../conversation.service';
+import { InputQueryMessageComponent } from '../input-query-message/input-query-message.component';
+import {
+    SeeBeforeRelativeMessageComponent
+} from '../see-before-relative-message/see-before-relative-message';
 import { SeeYesterdatMessageComponent } from '../see-yesterday-message/see-yesterday.component';
 
 @Component({
@@ -61,7 +66,7 @@ export class MessageComponent implements OnInit, AfterContentInit {
 
     const xfactory = this.resolver.resolveComponentFactory(componentResolved)
     const componentRef = this.entry.createComponent(xfactory);
-    (<any>componentRef.instance).value = this.message;
+    (componentRef.instance as any).value = this.message;
   }
 
 }

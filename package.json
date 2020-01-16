@@ -23,6 +23,7 @@
     "bootstrap": "4.4.1",
     "date-fns": "^2.8.1",
     "funfix": "^7.0.1",
+    "lodash": "^4.17.15",
     "phoenix-channels": "^1.0.0",
     "rxjs": "~6.4.0",
     "tslib": "^1.10.0",
