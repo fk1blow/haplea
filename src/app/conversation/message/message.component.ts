@@ -47,10 +47,17 @@ export class MessageComponent implements OnInit, AfterContentInit {
         componentResolved = SeeYesterdatMessageComponent;
         break;
 
+      case 'undefined-intent':
+        console.log('undefined intent')
+        break;
+
       default:
-        componentResolved = ShowEntryMessageComponent;
+        console.log('undefined intent')
+        // componentResolved = ShowEntryMessageComponent;
         break;
     }
+
+    if (!componentResolved) return;
 
     const xfactory = this.resolver.resolveComponentFactory(componentResolved)
     const componentRef = this.entry.createComponent(xfactory);

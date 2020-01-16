@@ -8,6 +8,7 @@ import { NgModule } from '@angular/core';
 import { ShowEntryMessageComponent } from './show-entry-message/show-entry-message.component';
 import { SeeBeforeRelativeMessageComponent } from './see-before-relative-message/see-before-relative-message';
 import { SeeYesterdatMessageComponent } from './see-yesterday-message/see-yesterday.component';
+import { FormsModule } from '@angular/forms';
 
 @NgModule({
   declarations: [
@@ -20,7 +21,8 @@ import { SeeYesterdatMessageComponent } from './see-yesterday-message/see-yester
     SeeYesterdatMessageComponent
   ],
   imports: [
-    CommonModule
+    CommonModule,
+    FormsModule,
   ],
   providers: [
     ConversationService

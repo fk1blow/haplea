@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ConversationService } from '../conversation.service';
 
 @Component({
   selector: 'hap-add-entry-message',
@@ -7,9 +8,22 @@ import { Component, OnInit } from '@angular/core';
 })
 export class AddEntryMessageComponent implements OnInit {
 
-  constructor() { }
+  entryInput = ''
+
+  constructor(private conversationService: ConversationService) { }
 
   ngOnInit() {
+  }
+
+  onSubmit(evt: Event) {
+    evt.preventDefault()
+  }
+
+  onAdd(evt: Event) {
+    evt.preventDefault()
+
+    if (this.entryInput.trim().length > 0)
+      this.conversationService.pushNewEntry(this.entryInput)
   }
 
 }

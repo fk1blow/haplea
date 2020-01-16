@@ -51,8 +51,14 @@ export class ConversationService {
     })
   }
 
+  // there should be a different service that handles the ws connection
+  // and this one should communicate with it insted of directly sending messages
   push(input: ConversationInput) {
     this.lobbyChannel.push('conversation:message:post', { body: input })
+  }
+
+  pushNewEntry(input: string) {
+    this.lobbyChannel.push('conversation:expense:create', { body: input })
   }
 
 }
