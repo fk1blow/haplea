@@ -5,7 +5,7 @@ use clap::Parser;
 #[command(about = "A multi-feature Rust application with mDNS, HTTP server, and markdown parsing")]
 pub struct Config {
     /// Enable mDNS service discovery
-    #[arg(long, default_value_t = false)]
+    #[arg(long, default_value_t = true)]
     pub enable_discovery: bool,
 
     /// Enable HTTP server
@@ -19,4 +19,8 @@ pub struct Config {
     /// Service name for mDNS
     #[arg(long, default_value = "haplea")]
     pub service_name: String,
+
+    /// Instance name for this node (defaults to hostname)
+    #[arg(long)]
+    pub instance_name: Option<String>,
 }

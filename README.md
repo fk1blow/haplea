@@ -34,17 +34,21 @@ haplea/
 ## Features
 
 ### 🔍 mDNS Service Discovery
+
 Discover and advertise services on the local network using the `mdns-sd` crate.
 
 ### 🌐 HTTP Server
+
 Simple HTTP server built with Axum, serving a web interface and API endpoints.
 
 ### 📝 Markdown Parsing
+
 Parse markdown files using `pulldown-cmark` for recipe storage and rendering.
 
 ## Development
 
 ### Prerequisites
+
 - Rust 1.70+ (install via [rustup](https://rustup.rs/))
 - Node.js 18+ (for frontend development)
 
@@ -107,9 +111,16 @@ Options:
   -h, --help             Print help
 ```
 
+## Testing
+
+```bash
+cargo test -- --nocapture 2>/dev/null
+```
+
 ## Architecture
 
 The project follows a **Cargo workspace** architecture for better:
+
 - **Separation of concerns**: Each crate has a single responsibility
 - **Independent testing**: Test each component in isolation
 - **Reusability**: Libraries can be used independently

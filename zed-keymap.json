@@ -1,0 +1,164 @@
+[
+  {
+    "context": "Pane",
+    "bindings": {
+      "cmd-1": ["pane::ActivateItem", 0],
+      "cmd-2": ["pane::ActivateItem", 1],
+      "cmd-3": ["pane::ActivateItem", 2],
+      "cmd-4": ["pane::ActivateItem", 3],
+      "cmd-5": ["pane::ActivateItem", 4],
+      "cmd-6": ["pane::ActivateItem", 5],
+      "cmd-7": ["pane::ActivateItem", 6],
+      "cmd-8": ["pane::ActivateItem", 7],
+      "cmd-9": ["pane::ActivateItem", 8]
+    }
+  },
+
+  // ============================================
+  // Editor Group Navigation
+  // ============================================
+  {
+    "context": "Workspace",
+    "bindings": {
+      // Focus editor groups (meh+u, meh+i)
+      "ctrl-shift-alt-u": "workspace::ActivatePaneLeft",
+      "ctrl-shift-alt-i": "workspace::ActivatePaneRight",
+
+      // Move editor between groups - creates pane if needed (meh+y, meh+o)
+      "ctrl-shift-alt-y": ["workspace::MoveItemToPaneInDirection", { "direction": "left" }],
+      "ctrl-shift-alt-o": ["workspace::MoveItemToPaneInDirection", { "direction": "right" }]
+    }
+  },
+  {
+    "context": "Pane",
+    "bindings": {
+      // Navigate between panes (meh+s)
+      "ctrl-shift-alt-s": "pane::ActivateNextItem",
+
+      // Move editor within group (meh+m, meh+comma)
+      "ctrl-shift-alt-m": "pane::SwapItemLeft",
+      "ctrl-alt-<": "pane::SwapItemRight"
+    }
+  },
+
+  // ============================================
+  // Cursor Movement & Scrolling
+  // ============================================
+  {
+    "context": "Editor && vim_mode == normal",
+    "bindings": {
+      // Jump 10 lines (hyper+j/k)
+      "shift-ctrl-alt-cmd-j": ["workspace::SendKeystrokes", "j j j j j j j j j j"],
+      "shift-ctrl-alt-cmd-k": ["workspace::SendKeystrokes", "k k k k k k k k k k"]
+    }
+  },
+  {
+    "context": "Editor",
+    "bindings": {
+      // Scroll viewport (meh+j/k) - using vim scroll commands
+      "shift-ctrl-alt-j": ["workspace::SendKeystrokes", "ctrl-e ctrl-e ctrl-e ctrl-e ctrl-e"],
+      "shift-ctrl-alt-k": ["workspace::SendKeystrokes", "ctrl-y ctrl-y ctrl-y ctrl-y ctrl-y"]
+    }
+  },
+
+  // ============================================
+  // Tab Navigation within Group
+  // ============================================
+  {
+    "context": "Pane",
+    "bindings": {
+      // Next/previous tab (meh+l/h)
+      "shift-ctrl-alt-l": "pane::ActivateNextItem",
+      "shift-ctrl-alt-h": "pane::ActivatePrevItem",
+
+      // Navigation history (hyper+h/l)
+      "shift-ctrl-alt-cmd-h": "pane::GoBack",
+      "shift-ctrl-alt-cmd-l": "pane::GoForward",
+
+      // Also map shift+cmd+h/l for navigation
+      "shift-cmd-h": "pane::GoBack",
+      "shift-cmd-l": "pane::GoForward"
+    }
+  },
+
+  // ============================================
+  // Quick Switcher & Tab History
+  // ============================================
+  {
+    "context": "Pane",
+    "bindings": {
+      // Cycle through recent editors (ctrl+tab)
+      // Note: Zed's ctrl-tab behavior differs from VSCode
+      "ctrl-tab": "pane::ActivateNextItem"
+    }
+  },
+
+  // ============================================
+  // Sidebar & Panel Toggles
+  // ============================================
+  {
+    "context": "Workspace",
+    "bindings": {
+      "cmd-b": "workspace::ToggleLeftDock",
+      "shift-cmd-b": "project_panel::ToggleFocus",
+      "cmd-g": "workspace::ToggleRightDock",
+      "shift-cmd-g": "workspace::ToggleRightDock",
+      "shift-cmd-a": "pane::RevealInProjectPanel"
+    }
+  },
+
+  // ============================================
+  // Editor Actions
+  // ============================================
+  {
+    "context": "Editor",
+    "bindings": {
+      // Code actions & refactoring
+      "cmd-k cmd-o": "editor::ToggleCodeActions",
+      "cmd-k cmd-r": "editor::Rename",
+
+      // Folding
+      "cmd-k cmd-0": "editor::UnfoldAll",
+      "cmd-k cmd-f": "editor::Fold",
+      "cmd-k cmd-.": "editor::FoldSelectedRanges",
+
+      // Go to definition/references
+      "cmd-k cmd-l": "editor::GoToDefinition",
+      "cmd-k cmd-m": "editor::GoToImplementation",
+      "cmd-k cmd-j": "editor::FindAllReferences"
+    }
+  },
+
+  // ============================================
+  // Window & Layout
+  // ============================================
+  {
+    "context": "Workspace",
+    "bindings": {
+      "shift-cmd-enter": "workspace::ToggleZoom",
+      "ctrl-shift-3": "pane::SplitRight"
+    }
+  }
+
+  // ============================================
+  // Disabled/Removed Bindings
+  // ============================================
+  // The following VSCode keybindings don't have direct Zed equivalents:
+  // - Terminal-specific shortcuts (Zed handles terminal differently)
+  // - Vim-specific overrides (Zed has its own vim mode)
+  // - Various VSCode-specific UI commands
+  // - Notification actions
+  // - LiveShare commands
+  // - Quick input navigation
+  // - Some workspace layout commands that work differently in Zed
+
+  // ============================================
+  // Notes on Differences:
+  // ============================================
+  // 1. Zed uses "pane" terminology instead of "editor group"
+  // 2. Some complex cursor movements may need vim mode commands
+  // 3. Zed's panel/dock system differs from VSCode
+  // 4. Terminal integration works differently
+  // 5. Some "meh" and "hyper" key combinations preserved where possible
+  // 6. config.foo.enabled conditions not directly portable
+]
