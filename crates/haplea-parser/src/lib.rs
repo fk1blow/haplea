@@ -1,19 +1,18 @@
 mod scanner;
 mod token;
+use crate::scanner::Scanner;
 
 /// Parse a markdown recipe and return structured data
 pub fn parse_recipe(markdown: &str) -> String {
-    print!("{markdown}");
+    let mut scanner = Scanner::new(String::from(markdown));
+    scanner.scan();
+
     "Parsed Recipe Stub".to_string()
 }
 
 #[cfg(test)]
 mod tests {
-
-    use crate::scanner::Scanner;
-
     use super::*;
-    // use token::*;
 
     #[test]
     fn test_parse_recipe() {
@@ -25,7 +24,9 @@ mod tests {
 
         // alternative to inline markdown
         // const MARKDOWN: &str = include_str!("test.md");
-        let markdown_1 = "# ";
+        let markdown_1 = r#"# My first recipe
+
+        "#;
 
         let _markdown_3 = r#"
             # hello world
@@ -48,15 +49,9 @@ mod tests {
             some notes about this recipe
         "#;
 
-        let mut scanner = Scanner::new(String::from(markdown_1));
-        scanner.scan();
-        println!("markdown source: \n {markdown_1} \nmardown end");
-        // format!("scanner source: {:?}", scanner.source);
-        // println!("scanner source: {:?}", scanner.source);
-        // println!("{:?}", scanner.tokens);
+        parse_recipe(markdown_1);
 
-        // let result = parse_recipe(markdown_1);
         // assert_eq!(result, "Parsed Recipe Stub");
-        assert_eq!(true, true);
+        // assert_eq!(true, true);
     }
 }
