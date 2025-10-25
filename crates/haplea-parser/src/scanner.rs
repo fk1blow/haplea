@@ -21,13 +21,33 @@ impl Scanner {
         }
     }
 
-    fn is_at_end(&self) -> bool {
+    fn at_end_of_file(&self) -> bool {
         self.pos >= self.chars.len()
+    }
+
+    fn at_end_of_line(&self) -> bool {
+        self.at_end_of_file() || self.chars[self.pos] == '\n'
     }
 
     fn advance(&mut self) {
         self.pos += 1
     }
+
+    fn consume(&mut self) -> Option<char> {
+        if self.pos < self.chars.len() {
+            let ch = self.chars[self.pos];
+            self.advance();
+            return Some(ch);
+        }
+        None
+    }
+
+    // fn consume_line(&mut self) -> Option<char> {
+    //     while !self.at_end_of_line() {
+    //         return self.consume();
+    //     }
+    //     None
+    // }
 
     fn is_heading(&self) -> bool {
         let mut current_pos = self.pos;
@@ -66,17 +86,28 @@ impl Scanner {
             self.advance()
         }
 
-        let text_starts_at = self.pos;
+        let mut heading_text = String::from("");
 
-        while self.pos < self.chars.len() && self.chars[self.pos] != '\n' {
-            self.advance()
+        while let Some(ch) = self.consume_line() {
+            heading_text.push(ch);
         }
 
-        self.chars[text_starts_at..self.pos].iter().collect()
+        String::from("")
+
+        // self.chars[text_starts_at..self.pos].iter().collect()
     }
 
+    // need an algorithm that
+    // takes as between 1 and 6 # chars
+    // takes at leas one space char
+    // goes until the end of line or file
+
     pub fn scan(&mut self) {
-        while !self.is_at_end() {
+        let ccc = 's';
+        // ccc.as_s
+        // self.chars.as_str();
+
+        while !self.at_end_of_file() {
             println!("pos: {}, {}", self.pos, self.chars[self.pos]);
 
             if self.is_heading() {
@@ -91,7 +122,7 @@ impl Scanner {
             }
 
             // after all
-            self.pos += 1;
+            self.advance();
         }
     }
 }
