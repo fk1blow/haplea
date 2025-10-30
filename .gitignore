@@ -1,13 +1,12 @@
-# Rust
-/target
-Cargo.lock
+# Zig
+zig-out/
+zig-cache/
+.zig-cache/
 
 # Node
 /node_modules
 /dist
 
-# WASM
-parser/pkg
 
 # IDE
 .vscode
