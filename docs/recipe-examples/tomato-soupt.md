@@ -12,7 +12,15 @@ comfort-food, vegetarian, winter, one-pot
 
 ## ingredients
 
-...
+- 2 tbsp butter
+- 1 large onion, diced
+- 3 cloves garlic, minced
+- 800g canned tomatoes (whole or crushed)
+- 2 cups vegetable broth
+- 1 tsp sugar
+- 1/2 cup heavy cream
+- Fresh basil leaves
+- Salt and pepper to taste
 
 ## instructions
 

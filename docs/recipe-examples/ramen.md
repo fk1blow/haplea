@@ -12,7 +12,17 @@ japanese, noodles, comfort-food, umami, winter
 
 ## ingredients
 
-...
+- 1kg chicken bones (for broth)
+- 8 cups water
+- 2 packs fresh ramen noodles
+- 300g pork belly, sliced
+- 2 large eggs
+- 2 green onions, sliced
+- 2 sheets nori (dried seaweed)
+- 3 tbsp soy sauce
+- 1 tbsp mirin
+- 1 tsp sesame oil (optional)
+- Salt to taste
 
 ## instructions
 
