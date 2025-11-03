@@ -53,12 +53,12 @@ pub const Parser = struct {
             switch (starting) {
                 .Heading => {
                     var level: i8 = 0;
-                    while (level <= 5 and self.source[self.position] == '#') {
+                    while (self.can_advance() and level <= 5 and self.source[self.position] == '#') {
                         level += 1;
                         self.advance();
                     }
 
-                    if (self.source[self.position] == ' ') {
+                    if (self.can_advance() and self.source[self.position] == ' ') {
                         self.advance();
                     }
 
