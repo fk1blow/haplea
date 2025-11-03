@@ -72,11 +72,9 @@ pub const Parser = struct {
                 },
 
                 .Undefined => {
-                    if (self.can_advance()) self.advance();
+                    self.advance();
                 },
             }
-
-            // self.advance();
         }
     }
 };
