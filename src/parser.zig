@@ -80,13 +80,17 @@ pub const Parser = struct {
 };
 
 test "crash when input doesn't end with newline and has heading" {
-    const input = "# Title"; // No trailing newline!
+    const input = "# Title";
 
     var parser = Parser.init(std.testing.allocator, input);
     defer parser.deinit();
 
     try parser.scan();
-    parser.debug_tokens();
+
+    try std.testing.expectEqual(@as(usize, 1), parser.tokens.items.len);
+    try std.testing.expectEqual(TokenType.Heading, parser.tokens.items[0].type);
+    try std.testing.expectEqualStrings("Title", parser.tokens.items[0].value);
+    try std.testing.expectEqual(@as(u32, 1), parser.tokens.items[0].line);
 }
 
 test "parse in the middle of the line" {
@@ -96,28 +100,30 @@ test "parse in the middle of the line" {
         \\whatever
         \\# Here it is
     ;
-    // _ = input;
+
     var parser = Parser.init(std.testing.allocator, input);
     defer parser.deinit();
     try parser.scan();
-    parser.debug_tokens();
+
+    // Should only match the heading at line start (last line)
+    try std.testing.expectEqual(@as(usize, 1), parser.tokens.items.len);
+    try std.testing.expectEqual(TokenType.Heading, parser.tokens.items[0].type);
+    try std.testing.expectEqualStrings("Here it is", parser.tokens.items[0].value);
+    try std.testing.expectEqual(@as(u32, 4), parser.tokens.items[0].line);
 }
 
 test "parse one line" {
     const input = "# Recipe Title";
-    _ = input;
-    // var parser = Parser.init(); // 14 chars len
-    // parser.scan();
-}
 
-// test "parse multiline" {
-//     const input =
-//         \\ # Recipe Title
-//         \\
-//     ;
-//     var parser = Parser.init(input);
-//     parser.scan();
-// }
+    var parser = Parser.init(std.testing.allocator, input);
+    defer parser.deinit();
+    try parser.scan();
+
+    try std.testing.expectEqual(@as(usize, 1), parser.tokens.items.len);
+    try std.testing.expectEqual(TokenType.Heading, parser.tokens.items[0].type);
+    try std.testing.expectEqualStrings("Recipe Title", parser.tokens.items[0].value);
+    try std.testing.expectEqual(@as(u32, 1), parser.tokens.items[0].line);
+}
 
 test "parse recipe with ingredients" {
     const input =
@@ -131,37 +137,19 @@ test "parse recipe with ingredients" {
         \\- cheese
     ;
 
-    // _ = input;
-
     var parser = Parser.init(std.testing.allocator, input);
     defer parser.deinit();
     try parser.scan();
-    parser.debug_tokens();
+
+    try std.testing.expectEqual(@as(usize, 2), parser.tokens.items.len);
+
+    // First heading
+    try std.testing.expectEqual(TokenType.Heading, parser.tokens.items[0].type);
+    try std.testing.expectEqualStrings("Scrambled Eggs", parser.tokens.items[0].value);
+    try std.testing.expectEqual(@as(u32, 1), parser.tokens.items[0].line);
+
+    // Second heading
+    try std.testing.expectEqual(TokenType.Heading, parser.tokens.items[1].type);
+    try std.testing.expectEqualStrings("ingredients", parser.tokens.items[1].value);
+    try std.testing.expectEqual(@as(u32, 5), parser.tokens.items[1].line);
 }
-
-// test "parse full recipe" {
-//     const input =
-//         \\# Scrambled Eggs
-//         \\
-//         \\Easy, fast and good recipe.
-//         \\
-//         \\## tags
-//         \\
-//         \\breakfast, eggs, fast food
-//         \\
-//         \\## ingredients
-//         \\
-//         \\- eggs
-//         \\- onion or leek(praz)
-//         \\- cheese
-//         \\- salt
-//         \\- pepper
-//         \\
-//         \\## instructions
-//         \\
-//         \\how to do it...
-//     ;
-
-//     var parser = Parser.init(input);
-//     parser.scan();
-// }
