@@ -1,255 +1,119 @@
 const std = @import("std");
+const mem = std.mem;
 
-const TokenType = enum { Heading, Paragraph, Undefined };
-const Token = struct { type: TokenType, value: []const u8, line: u32 };
+const LineType = enum { Blank, Empty, Heading, Paragraph, List };
 
-pub const Parser = struct {
-    source: []const u8,
-    position: u32,
-    line: u32,
-    tokens: std.ArrayList(Token),
-    allocator: std.mem.Allocator,
+const Line = struct {
+    type: LineType,
+    text: []const u8,
+    position: usize,
 
-    fn current_char(self: *Parser) u8 {
-        return self.source[self.position];
-    }
+    fn is_heading(text: []const u8) bool {
+        var hash_count: usize = 0;
+        var i: usize = 0;
 
-    fn advance(self: *Parser) void {
-        if (self.current_char() == '\n') {
-            self.line += 1;
+        while (i < text.len and text[i] == '#') {
+            hash_count += 1;
+            i += 1;
         }
-        self.position += 1;
+
+        return hash_count >= 1 and hash_count <= 6 and i < text.len and text[i] == ' ';
     }
 
-    fn can_advance(self: *Parser) bool {
-        return self.position < self.source.len;
-    }
-
-    fn at_line_start(self: *Parser) bool {
-        if (self.position == 0) return true;
-        return self.source[self.position - 1] == '\n';
-    }
-
-    fn is_new_line(self: *Parser) bool {
-        return self.current_char() == '\n';
-    }
-
-    fn is_empty_char(self: *Parser) bool {
-        return self.current_char() == ' ';
-    }
-
-    fn peek(self: *Parser, offset: u32) ?u8 {
-        const pos = self.position + offset;
-        if (pos >= self.source.len) return null;
-        return self.source[pos];
-    }
-
-    pub fn init(allocator: std.mem.Allocator, source: []const u8) Parser {
-        return Parser{ .source = source, .position = 0, .line = 1, .tokens = std.ArrayList(Token){}, .allocator = allocator };
-    }
-
-    pub fn deinit(self: *Parser) void {
-        self.tokens.deinit(self.allocator); // Pass allocator here too
-    }
-
-    pub fn debug_tokens(self: *Parser) void {
-        for (self.tokens.items) |token| {
-            std.debug.print("  {{ .type = .{s}, .value = \"{s}\", .line = {} }}\n", .{ @tagName(token.type), token.value, token.line });
+    fn is_empty(text: []const u8) bool {
+        var i: usize = 0;
+        while (i < text.len) : (i += 1) {
+            if (text[i] != ' ') return false;
         }
+        return true;
     }
 
-    pub fn scan(self: *Parser) !void {
-        const Starting = enum { Heading, Paragraph, Undefined };
+    fn is_list(text: []const u8) bool {
+        if (mem.indexOf(u8, text, "- ")) |index| return index < 4;
+        return false;
+    }
 
-        while (self.can_advance()) {
-            var starting: Starting = .Undefined;
+    pub fn init(text: []const u8, position: usize) Line {
+        const line_type = if (is_heading(text))
+            LineType.Heading
+        else if (is_list(text))
+            LineType.List
+        else if (text.len == 0)
+            LineType.Blank
+        else if (is_empty(text))
+            LineType.Empty
+        else
+            LineType.Paragraph;
 
-            // Skip any blank lines
-            while (self.can_advance() and self.is_new_line()) {
-                self.advance();
-            }
-
-            if (self.at_line_start() and self.current_char() == '#') {
-                starting = .Heading;
-            } else {
-                starting = .Paragraph;
-            }
-
-            switch (starting) {
-                .Paragraph => {
-                    const start_line = self.line;
-                    const text_start = self.position;
-                    var text_end = self.position;
-                    var text_found_in_line = false;
-
-                    while (self.can_advance()) {
-                        if (self.current_char() == '\n') {
-                            if (!text_found_in_line) {
-                                break;
-                            }
-                            if (self.peek(1)) |next_char| {
-                                if (next_char == '#') {
-                                    text_end = self.position;
-                                    self.advance();
-                                    break;
-                                }
-                            }
-
-                            text_found_in_line = false;
-                            text_end = self.position;
-                            self.advance();
-                        } else {
-                            if (self.current_char() != ' ' and self.current_char() != '\t') {
-                                text_found_in_line = true;
-                            }
-                            self.advance();
-                            text_end = self.position;
-                        }
-                    }
-
-                    const text = self.source[text_start..text_end];
-                    try self.tokens.append(self.allocator, Token{ .type = .Paragraph, .value = text, .line = start_line });
-                },
-
-                .Heading => {
-                    const current_line = self.line;
-
-                    var level: i8 = 0;
-                    while (self.can_advance() and level <= 5 and self.current_char() == '#') {
-                        level += 1;
-                        self.advance();
-                    }
-
-                    if (self.can_advance() and self.current_char() == ' ') {
-                        self.advance();
-                    }
-
-                    const text_start = self.position;
-                    while (self.can_advance() and self.current_char() != '\n') {
-                        self.advance();
-                    }
-                    const text = self.source[text_start..self.position];
-
-                    try self.tokens.append(self.allocator, Token{ .type = .Heading, .value = text, .line = current_line });
-                },
-
-                .Undefined => {
-                    self.advance();
-                },
-            }
-        }
+        return .{ .type = line_type, .text = text, .position = position };
     }
 };
 
-test "parse multiline paragraph" {
-    const p1 =
-        \\ This is
+pub const Parser = struct {
+    allocator: mem.Allocator,
+    source: []const u8,
+    lines: std.ArrayList(Line),
+
+    pub fn init(allocator: mem.Allocator, source: []const u8) Parser {
+        return Parser{ .allocator = allocator, .source = source, .lines = std.ArrayList(Line){} };
+    }
+
+    pub fn deinit(self: *Parser) void {
+        self.lines.deinit(self.allocator);
+    }
+
+    pub fn parse(self: *Parser) !void {
+        try self.classify_lines();
+        // TODO
+        // try self.assemble_blicks()
+    }
+
+    fn classify_lines(self: *Parser) !void {
+        var it = std.mem.splitScalar(u8, self.source, '\n');
+        var i: usize = 0;
+        while (it.next()) |line| : (i += 1) {
+            try self.lines.append(self.allocator, Line.init(line, i));
+        }
+    }
+
+    // Phase 2: Group lines into blocks
+    // fn assemble_blocks(self: *Parser) !void {
+    //     // Group consecutive lines of same type into blocks
+    //     // - consecutive .ListItem lines → List block
+    //     // - consecutive .Paragraph lines → Paragraph block
+    //     // - .Heading → Heading block
+    //     // etc.
+    // }
+};
+
+test "split into lines" {
+    const source =
+        \\# Splitting
+        \\This is
         \\the start
+        \\
         \\of a great journey!
-    ;
-    const p2 = " ";
-    const p3 =
+        \\## Notes
+        \\something something
         \\
-        \\
-        \\then another paragraph
+        \\## Lists
+        \\- first
+        \\- second
+        \\- thirdish
     ;
+    const s2 = "\n   ";
+    const s3 = "\n bla bla ";
 
-    var parser = Parser.init(std.testing.allocator, p1 ++ p2 ++ p3);
-    defer parser.deinit();
+    var lexer = Parser.init(std.testing.allocator, source ++ s2 ++ s3);
+    defer lexer.deinit();
+    try lexer.parse();
 
-    try parser.scan();
+    for (lexer.lines.items) |line| {
+        std.debug.print("  {{ .type = .{s}, .position = {d}, .text = \"{s}\" }}\n", .{ @tagName(line.type), line.position, line.text });
+    }
 
-    try std.testing.expectEqual(@as(usize, 2), parser.tokens.items.len);
+    try std.testing.expectEqual(@as(usize, 0), lexer.lines.items.len);
     // try std.testing.expectEqual(TokenType.Paragraph, parser.tokens.items[0].type);
     // try std.testing.expectEqualStrings(p1 ++ p2, parser.tokens.items[0].value);
     // try std.testing.expectEqual(@as(u32, 1), parser.tokens.items[0].line);
-}
-
-test "parse one line paragraph" {
-    const input = "This is a paragraph";
-
-    var parser = Parser.init(std.testing.allocator, input);
-    defer parser.deinit();
-
-    try parser.scan();
-
-    try std.testing.expectEqual(@as(usize, 1), parser.tokens.items.len);
-    try std.testing.expectEqual(TokenType.Paragraph, parser.tokens.items[0].type);
-    try std.testing.expectEqualStrings("This is a paragraph", parser.tokens.items[0].value);
-    try std.testing.expectEqual(@as(u32, 1), parser.tokens.items[0].line);
-}
-
-test "crash when input doesn't end with newline and has heading" {
-    const input = "# Title";
-
-    var parser = Parser.init(std.testing.allocator, input);
-    defer parser.deinit();
-
-    try parser.scan();
-
-    try std.testing.expectEqual(@as(usize, 1), parser.tokens.items.len);
-    try std.testing.expectEqual(TokenType.Heading, parser.tokens.items[0].type);
-    try std.testing.expectEqualStrings("Title", parser.tokens.items[0].value);
-    try std.testing.expectEqual(@as(u32, 1), parser.tokens.items[0].line);
-}
-
-test "parse in the middle of the line" {
-    const input =
-        \\something
-        \\bla # Title here
-        \\whatever
-        \\# Here it is
-    ;
-
-    var parser = Parser.init(std.testing.allocator, input);
-    defer parser.deinit();
-    try parser.scan();
-
-    // Should only match the heading at line start (last line)
-    try std.testing.expectEqual(@as(usize, 2), parser.tokens.items.len);
-    try std.testing.expectEqual(TokenType.Heading, parser.tokens.items[1].type);
-    try std.testing.expectEqualStrings("Here it is", parser.tokens.items[1].value);
-    try std.testing.expectEqual(@as(u32, 4), parser.tokens.items[1].line);
-}
-
-test "parse one line" {
-    const input = "# Recipe Title";
-
-    var parser = Parser.init(std.testing.allocator, input);
-    defer parser.deinit();
-    try parser.scan();
-
-    try std.testing.expectEqual(@as(usize, 1), parser.tokens.items.len);
-    try std.testing.expectEqual(TokenType.Heading, parser.tokens.items[0].type);
-    try std.testing.expectEqualStrings("Recipe Title", parser.tokens.items[0].value);
-    try std.testing.expectEqual(@as(u32, 1), parser.tokens.items[0].line);
-}
-
-test "parse recipe with ingredients" {
-    const input =
-        \\# Scrambled Eggs
-        \\
-        \\Easy, fast and good recipe.
-        \\
-        \\## ingredients
-        \\
-        \\- eggs
-        \\- cheese
-    ;
-
-    var parser = Parser.init(std.testing.allocator, input);
-    defer parser.deinit();
-    try parser.scan();
-
-    try std.testing.expectEqual(@as(usize, 4), parser.tokens.items.len);
-
-    // Title heading
-    try std.testing.expectEqual(TokenType.Heading, parser.tokens.items[0].type);
-    try std.testing.expectEqualStrings("Scrambled Eggs", parser.tokens.items[0].value);
-    try std.testing.expectEqual(@as(u32, 1), parser.tokens.items[0].line);
-
-    // Ingredients heading
-    try std.testing.expectEqual(TokenType.Heading, parser.tokens.items[2].type);
-    try std.testing.expectEqualStrings("ingredients", parser.tokens.items[2].value);
-    try std.testing.expectEqual(@as(u32, 5), parser.tokens.items[2].line);
 }
