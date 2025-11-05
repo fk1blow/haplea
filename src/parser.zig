@@ -29,8 +29,11 @@ const Line = struct {
     }
 
     fn is_list(text: []const u8) bool {
-        if (mem.indexOf(u8, text, "- ")) |index| return index < 4;
-        return false;
+        const trimmed = mem.trimLeft(u8, text, " ");
+        if (trimmed.len > 3) return false;
+
+        const indent = text.len - trimmed.len;
+        return indent < 4 and mem.startsWith(u8, trimmed, "- ");
     }
 
     pub fn init(text: []const u8, position: usize) Line {
@@ -99,7 +102,7 @@ test "split into lines" {
         \\## Lists
         \\- first
         \\- second
-        \\- thirdish
+        \\-thirdish
     ;
     const s2 = "\n   ";
     const s3 = "\n bla bla ";
