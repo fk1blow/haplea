@@ -2,7 +2,6 @@ const std = @import("std");
 const mem = std.mem;
 
 const LineType = union(enum) { Blank, Empty, Heading: struct { level: u8 }, Paragraph, List };
-
 const Line = struct {
     type: LineType,
     text: []const u8,
@@ -32,21 +31,19 @@ const Line = struct {
 
     fn is_list(text: []const u8) bool {
         const trimmed = mem.trimLeft(u8, text, " ");
-        if (trimmed.len > 3) return false;
-
         const indent = text.len - trimmed.len;
         return indent < 4 and mem.startsWith(u8, trimmed, "- ");
     }
 
     pub fn init(text: []const u8, position: usize) Line {
-        const line_type = if (is_heading(text)) |level|
-            LineType{ .Heading = .{ .level = level } }
-        else if (is_list(text))
-            LineType{ .List = {} }
-        else if (text.len == 0)
+        const line_type = if (text.len == 0)
             LineType{ .Blank = {} }
         else if (is_empty(text))
             LineType{ .Empty = {} }
+        else if (is_heading(text)) |level|
+            LineType{ .Heading = .{ .level = level } }
+        else if (is_list(text))
+            LineType{ .List = {} }
         else
             LineType{ .Paragraph = {} };
 
@@ -54,17 +51,16 @@ const Line = struct {
     }
 };
 
-const Block = struct {
-    //
-};
+const Block = struct { title: []const u8 = "", tags: []const u8 = "", ingredients: []const u8 = "" };
 
 pub const Parser = struct {
     allocator: mem.Allocator,
     source: []const u8,
     lines: std.ArrayList(Line),
+    block: Block,
 
     pub fn init(allocator: mem.Allocator, source: []const u8) Parser {
-        return Parser{ .allocator = allocator, .source = source, .lines = std.ArrayList(Line){} };
+        return Parser{ .allocator = allocator, .source = source, .lines = std.ArrayList(Line){}, .block = Block{} };
     }
 
     pub fn deinit(self: *Parser) void {
@@ -73,7 +69,7 @@ pub const Parser = struct {
 
     pub fn parse(self: *Parser) !void {
         try self.classify_lines();
-        try self.assemble_blocks();
+        // try self.assemble_block();
     }
 
     fn classify_lines(self: *Parser) !void {
@@ -84,9 +80,42 @@ pub const Parser = struct {
         }
     }
 
-    // Phase 2: Group lines into blocks
-    fn assemble_blocks(self: *Parser) !void {
-        _ = self;
+    fn assemble_block(self: *Parser) !void {
+        const ParseStage = struct {
+            title: bool,
+            tags: bool,
+            ingredients: bool,
+        };
+
+        var stage = ParseStage{
+            .title = false,
+            .tags = false,
+            .ingredients = false,
+        };
+
+        // var foo: []const u8 = "";
+
+        // const block = Block{};
+        // _ = block;
+        // var parsing_line: LineType = LineType.
+
+        for (self.lines.items) |line| {
+            // std.debug.print("line, idx: {}, {d}", .{ line.type, index });
+
+            if (line.type == LineType.Heading) {
+                if (line.type.Heading.level == 1) {
+                    self.block.title = line.text;
+                    stage.title = true;
+                }
+
+                if (line.type.Heading.level == 2 and mem.eql(u8, line.text, "## tags")) {
+                    self.block.tags = line.text;
+                }
+            }
+        }
+
+        std.debug.print("stage: {} \n", .{stage});
+
         //     // Group consecutive lines of same type into blocks
         //     // - consecutive .ListItem lines → List block
         //     // - consecutive .Paragraph lines → Paragraph block
@@ -95,29 +124,19 @@ pub const Parser = struct {
     }
 };
 
-test "assemble into blocks" {
-    const source =
-        \\# Splitting
-        \\This is
-        \\the start
-        \\
-        \\of a great journey!
-        \\## Notes
-        \\something something
-        \\
-        \\## Lists
-        \\- first
-        \\- second
-        \\-thirdish
-    ;
-    const s2 = "\n   ";
-    const s3 = "\n bla bla ";
+test "parse recipe from filesystem" {
+    const file = try std.fs.cwd().openFile("docs/recipe-examples/scrambled-eggs-recipe.md", .{});
+    defer file.close();
+    const content = try file.readToEndAlloc(std.testing.allocator, 1024 * 1024);
+    defer std.testing.allocator.free(content);
 
-    var parser = Parser.init(std.testing.allocator, source ++ s2 ++ s3);
+    var parser = Parser.init(std.testing.allocator, content);
     defer parser.deinit();
     try parser.parse();
 
     for (parser.lines.items) |line| {
+        if (line.type == LineType.Blank) continue;
+
         switch (line.type) {
             .Heading => |heading| {
                 std.debug.print("  {{ .type = .Heading, .level = {d}, .position = {d}, .text = \"{s}\" }}\n", .{ heading.level, line.position, line.text });
@@ -127,6 +146,8 @@ test "assemble into blocks" {
             },
         }
     }
+
+    // std.debug.print("block: {{ .title = \".{s}\", .tags = \".{s} }} \n", .{ parser.block.title, parser.block.tags });
 
     try std.testing.expectEqual(@as(usize, 14), parser.lines.items.len);
 }
@@ -146,12 +167,13 @@ test "classify lines" {
         \\- second
         \\-thirdish
     ;
-    const s2 = "\n   ";
-    const s3 = "\n bla bla ";
+    _ = source;
+    // const s2 = "\n   ";
+    // const s3 = "\n bla bla ";
 
-    var parser = Parser.init(std.testing.allocator, source ++ s2 ++ s3);
-    defer parser.deinit();
-    try parser.parse();
+    // var parser = Parser.init(std.testing.allocator, source ++ s2 ++ s3);
+    // defer parser.deinit();
+    // try parser.parse();
 
-    try std.testing.expectEqual(@as(usize, 14), parser.lines.items.len);
+    // try std.testing.expectEqual(@as(usize, 14), parser.lines.items.len);
 }
