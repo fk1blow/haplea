@@ -113,11 +113,11 @@ test "assemble into blocks" {
     const s2 = "\n   ";
     const s3 = "\n bla bla ";
 
-    var lexer = Parser.init(std.testing.allocator, source ++ s2 ++ s3);
-    defer lexer.deinit();
-    try lexer.parse();
+    var parser = Parser.init(std.testing.allocator, source ++ s2 ++ s3);
+    defer parser.deinit();
+    try parser.parse();
 
-    for (lexer.lines.items) |line| {
+    for (parser.lines.items) |line| {
         switch (line.type) {
             .Heading => |heading| {
                 std.debug.print("  {{ .type = .Heading, .level = {d}, .position = {d}, .text = \"{s}\" }}\n", .{ heading.level, line.position, line.text });
@@ -128,7 +128,7 @@ test "assemble into blocks" {
         }
     }
 
-    try std.testing.expectEqual(@as(usize, 14), lexer.lines.items.len);
+    try std.testing.expectEqual(@as(usize, 14), parser.lines.items.len);
 }
 
 test "classify lines" {
@@ -149,20 +149,9 @@ test "classify lines" {
     const s2 = "\n   ";
     const s3 = "\n bla bla ";
 
-    var lexer = Parser.init(std.testing.allocator, source ++ s2 ++ s3);
-    defer lexer.deinit();
-    try lexer.parse();
+    var parser = Parser.init(std.testing.allocator, source ++ s2 ++ s3);
+    defer parser.deinit();
+    try parser.parse();
 
-    // for (lexer.lines.items) |line| {
-    //     switch (line.type) {
-    //         .Heading => |heading| {
-    //             std.debug.print("  {{ .type = .Heading, .level = {d}, .position = {d}, .text = \"{s}\" }}\n", .{ heading.level, line.position, line.text });
-    //         },
-    //         else => {
-    //             std.debug.print("  {{ .type = .{s}, .position = {d}, .text = \"{s}\" }}\n", .{ @tagName(line.type), line.position, line.text });
-    //         },
-    //     }
-    // }
-
-    try std.testing.expectEqual(@as(usize, 14), lexer.lines.items.len);
+    try std.testing.expectEqual(@as(usize, 14), parser.lines.items.len);
 }
