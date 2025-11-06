@@ -35,6 +35,12 @@ const Line = struct {
         return indent < 4 and mem.startsWith(u8, trimmed, "- ");
     }
 
+    // TODO this is a function that strips unnecessary characters like `##` or `- `
+    // TODO we also need to store both the original value of a line's text and the stripped text itself
+    // LineType{ value: '# Scrambled Eggs', text: "Scrambled Eggs" }
+    // or it should be the jobs of... another feature
+    // fn sanitize_text()
+
     pub fn init(text: []const u8, position: usize) Line {
         const line_type = if (text.len == 0)
             LineType{ .Blank = {} }
@@ -69,7 +75,7 @@ pub const Parser = struct {
 
     pub fn parse(self: *Parser) !void {
         try self.classify_lines();
-        // try self.assemble_block();
+        try self.assemble_block();
     }
 
     fn classify_lines(self: *Parser) !void {
