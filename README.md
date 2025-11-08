@@ -1,93 +1,72 @@
 # Haplea
 
-A multi-feature Rust application combining markdown parsing, mDNS service discovery, and HTTP server capabilities.
+A multi-feature Zig application combining markdown parsing, mDNS service discovery, and HTTP server capabilities.
 
 ## Project Structure
 
 ```
 haplea/
-├── Cargo.toml                    # Workspace root
-├── crates/
-│   ├── haplea/                   # Main binary application
-│   │   ├── src/
-│   │   │   ├── main.rs           # Entry point with CLI
-│   │   │   ├── config.rs         # Configuration and CLI args
-│   │   │   ├── discovery/        # mDNS service discovery
-│   │   │   └── server/           # HTTP server
-│   │   └── Cargo.toml
-│   ├── haplea-parser/            # Markdown parsing library
-│   │   ├── src/lib.rs
-│   │   └── Cargo.toml
-│   └── haplea-common/            # Shared types and utilities
-│       ├── src/
-│       │   ├── lib.rs
-│       │   ├── error.rs          # Error types
-│       │   └── types.rs          # Common types
-│       └── Cargo.toml
-├── frontend/                     # React + TypeScript web client
+├── build.zig                 # Build configuration
+├── build.zig.zon             # Package dependencies
+├── src/
+│   ├── main.zig              # Entry point with CLI
+│   ├── config.zig            # Configuration and CLI args
+│   ├── discovery/            # mDNS service discovery
+│   ├── server/               # HTTP server
+│   ├── parser/               # Markdown parsing
+│   └── common/               # Shared types and utilities
+├── frontend/                 # React + TypeScript web client
 │   ├── src/
-│   ├── libs/                     # Frontend shared utilities
+│   ├── libs/                 # Frontend shared utilities
 │   └── package.json
-└── scripts/                      # Build and automation scripts
+└── scripts/                  # Build and automation scripts
 ```
 
 ## Features
 
-### 🔍 mDNS Service Discovery
+### mDNS Service Discovery
 
-Discover and advertise services on the local network using the `mdns-sd` crate.
+Discover and advertise services on the local network.
 
-### 🌐 HTTP Server
+### HTTP Server
 
-Simple HTTP server built with Axum, serving a web interface and API endpoints.
+Simple HTTP server serving a web interface and API endpoints.
 
-### 📝 Markdown Parsing
+### Markdown Parsing
 
-Parse markdown files using `pulldown-cmark` for recipe storage and rendering.
+Parse markdown files for recipe storage and rendering.
 
 ## Development
 
 ### Prerequisites
 
-- Rust 1.70+ (install via [rustup](https://rustup.rs/))
+- Zig 0.15+ (install from [ziglang.org](https://ziglang.org/download/))
 - Node.js 18+ (for frontend development)
 
-### Building the Rust Workspace
+### Building the Project
 
 ```bash
-# Build all crates
-cargo build
+# Build the project
+zig build
 
 # Build in release mode
-cargo build --release
+zig build -Doptimize=ReleaseFast
 
-# Run the main binary
-cargo run --bin haplea
+# Run the application
+zig build run
 
 # Run with options
-cargo run --bin haplea -- --enable-discovery --port 3000
+zig build run -- --enable-discovery --port 3000
 ```
 
 ### Testing
 
 ```bash
-# Test all crates
-cargo test
+# Run all tests
+zig build test
 
-# Test specific crate
-cargo test -p haplea-parser
-cargo test -p haplea-common
-cargo test -p haplea
-```
-
-### Running Individual Crates
-
-```bash
-# Build just the parser
-cd crates/haplea-parser && cargo build
-
-# Test just the parser
-cd crates/haplea-parser && cargo test
+# Run tests with output
+zig build test --summary all
 ```
 
 ### Frontend Development
@@ -110,21 +89,6 @@ Options:
   --service-name <NAME>  Service name for mDNS (default: haplea)
   -h, --help             Print help
 ```
-
-## Testing
-
-```bash
-cargo test -- --nocapture 2>/dev/null
-```
-
-## Architecture
-
-The project follows a **Cargo workspace** architecture for better:
-
-- **Separation of concerns**: Each crate has a single responsibility
-- **Independent testing**: Test each component in isolation
-- **Reusability**: Libraries can be used independently
-- **Development speed**: Build and test only what you need
 
 ## License
 
