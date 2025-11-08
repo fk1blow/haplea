@@ -1,7 +1,29 @@
 const std = @import("std");
+const json = @import("std").json;
 const mem = std.mem;
 
-const LineType = union(enum) { Blank, Empty, Heading: struct { level: u8 }, Paragraph, List };
+const MarkdownUtils = struct {
+    pub fn stripHeading(line: []const u8) []const u8 {
+        var i: usize = 0;
+        while (i < line.len and (line[i] == '#' or line[i] == ' ')) : (i += 1) {}
+        return line[i..];
+    }
+
+    pub fn stripListMarker(line: []const u8) []const u8 {
+        var i: usize = 0;
+        while (i < line.len and (line[i] == '-' or line[i] == '*' or line[i] == ' ')) : (i += 1) {}
+        return line[i..];
+    }
+};
+
+const LineType = union(enum) {
+    Blank,
+    Empty,
+    Paragraph,
+    Heading: struct { level: u8 },
+    List,
+};
+
 const Line = struct {
     type: LineType,
     text: []const u8,
@@ -35,12 +57,6 @@ const Line = struct {
         return indent < 4 and mem.startsWith(u8, trimmed, "- ");
     }
 
-    // TODO this is a function that strips unnecessary characters like `##` or `- `
-    // TODO we also need to store both the original value of a line's text and the stripped text itself
-    // LineType{ value: '# Scrambled Eggs', text: "Scrambled Eggs" }
-    // or it should be the jobs of... another feature
-    // fn sanitize_text()
-
     pub fn init(text: []const u8, position: usize) Line {
         const line_type = if (text.len == 0)
             LineType{ .Blank = {} }
@@ -57,7 +73,35 @@ const Line = struct {
     }
 };
 
-const Block = struct { title: []const u8 = "", tags: []const u8 = "", ingredients: []const u8 = "" };
+const LineParsingError = error{ SameStateTransition, TransitionToNone, AlreadyComplete };
+
+const LineParsingState = struct {
+    pub const CurrentType = enum { None, Title, Ingredients, Tags, Unknown };
+    current: CurrentType = .None,
+
+    title: bool = false,
+    tags: bool = false,
+    ingredients: bool = false,
+
+    fn isComplete(self: LineParsingState) bool {
+        return self.title and self.ingredients and self.tags;
+    }
+
+    fn transition(self: *LineParsingState, to: CurrentType) LineParsingError!void {
+        if (self.isComplete()) {
+            return LineParsingError.AlreadyComplete;
+        }
+        // if (self.current == to) {
+        //     return LineParsingError.SameStateTransition;
+        // }
+        if (to == CurrentType.None) {
+            return LineParsingError.TransitionToNone;
+        }
+        self.current = to;
+    }
+};
+
+const Block = struct { title: []const u8 = "", tags: std.ArrayList([]const u8), ingredients: std.ArrayList([]const u8) };
 
 pub const Parser = struct {
     allocator: mem.Allocator,
@@ -66,16 +110,20 @@ pub const Parser = struct {
     block: Block,
 
     pub fn init(allocator: mem.Allocator, source: []const u8) Parser {
-        return Parser{ .allocator = allocator, .source = source, .lines = std.ArrayList(Line){}, .block = Block{} };
+        const block = Block{ .tags = std.ArrayList([]const u8){}, .ingredients = std.ArrayList([]const u8){} };
+        const lines = std.ArrayList(Line){};
+        return Parser{ .allocator = allocator, .source = source, .lines = lines, .block = block };
     }
 
     pub fn deinit(self: *Parser) void {
         self.lines.deinit(self.allocator);
+        self.block.tags.deinit(self.allocator);
+        self.block.ingredients.deinit(self.allocator);
     }
 
     pub fn parse(self: *Parser) !void {
         try self.classify_lines();
-        try self.assemble_block();
+        try self.parse_lines();
     }
 
     fn classify_lines(self: *Parser) !void {
@@ -86,47 +134,53 @@ pub const Parser = struct {
         }
     }
 
-    fn assemble_block(self: *Parser) !void {
-        const ParseStage = struct {
-            title: bool,
-            tags: bool,
-            ingredients: bool,
-        };
-
-        var stage = ParseStage{
-            .title = false,
-            .tags = false,
-            .ingredients = false,
-        };
-
-        // var foo: []const u8 = "";
-
-        // const block = Block{};
-        // _ = block;
-        // var parsing_line: LineType = LineType.
+    fn parse_lines(self: *Parser) !void {
+        var parsingState = LineParsingState{};
 
         for (self.lines.items) |line| {
+            if (line.type == .Blank or line.type == .Empty) continue;
+
             // std.debug.print("line, idx: {}, {d}", .{ line.type, index });
+            std.debug.print("parsing state: {}, line.type {} \n", .{ parsingState.current, line.type });
 
             if (line.type == LineType.Heading) {
-                if (line.type.Heading.level == 1) {
-                    self.block.title = line.text;
-                    stage.title = true;
-                }
+                const heading_text = MarkdownUtils.stripHeading(line.text);
 
-                if (line.type.Heading.level == 2 and mem.eql(u8, line.text, "## tags")) {
-                    self.block.tags = line.text;
+                if (line.type.Heading.level == 1) {
+                    self.block.title = heading_text;
+                    try parsingState.transition(.Title);
+                } else if (line.type.Heading.level == 2) {
+                    if (mem.indexOf(u8, heading_text, "tags")) |_| {
+                        try parsingState.transition(.Tags);
+                    } else if (mem.indexOf(u8, heading_text, "ingredients")) |_| {
+                        try parsingState.transition(.Ingredients);
+                    } else {
+                        try parsingState.transition(.Unknown);
+                    }
+                }
+            }
+
+            if (line.type == LineType.List) {
+                if (parsingState.current == .Ingredients) {
+                    const line_text = MarkdownUtils.stripListMarker(line.text);
+                    try self.block.ingredients.append(self.allocator, line_text);
+                } else if (parsingState.current == .Tags) {
+                    const line_text = MarkdownUtils.stripListMarker(line.text);
+                    try self.block.tags.append(self.allocator, line_text);
+                }
+            }
+
+            if (line.type == LineType.Paragraph) {
+                if (parsingState.current == .Ingredients) {
+                    try self.block.ingredients.append(self.allocator, line.text);
+                } else if (parsingState.current == .Tags) {
+                    try self.block.tags.append(self.allocator, line.text);
                 }
             }
         }
 
-        std.debug.print("stage: {} \n", .{stage});
-
-        //     // Group consecutive lines of same type into blocks
-        //     // - consecutive .ListItem lines → List block
-        //     // - consecutive .Paragraph lines → Paragraph block
-        //     // - .Heading → Heading block
-        //     // etc.
+        // std.debug.print("stage: {} \n", .{parsingState.current});
+        // std.debug.print("title: {s}, ingredients: {s} \n", .{ self.block.title, self.block.ingredients });
     }
 };
 
@@ -140,22 +194,29 @@ test "parse recipe from filesystem" {
     defer parser.deinit();
     try parser.parse();
 
-    for (parser.lines.items) |line| {
-        if (line.type == LineType.Blank) continue;
+    // for (parser.lines.items) |line| {
+    //     if (line.type == LineType.Blank) continue;
 
-        switch (line.type) {
-            .Heading => |heading| {
-                std.debug.print("  {{ .type = .Heading, .level = {d}, .position = {d}, .text = \"{s}\" }}\n", .{ heading.level, line.position, line.text });
-            },
-            else => {
-                std.debug.print("  {{ .type = .{s}, .position = {d}, .text = \"{s}\" }}\n", .{ @tagName(line.type), line.position, line.text });
-            },
-        }
-    }
+    //     switch (line.type) {
+    //         .Heading => |heading| {
+    //             std.debug.print("  {{ .type = .Heading, .level = {d}, .position = {d}, .text = \"{s}\" }}\n", .{ heading.level, line.position, line.text });
+    //         },
+    //         else => {
+    //             std.debug.print("  {{ .type = .{s}, .position = {d}, .text = \"{s}\" }}\n", .{ @tagName(line.type), line.position, line.text });
+    //         },
+    //     }
+    // }
 
-    // std.debug.print("block: {{ .title = \".{s}\", .tags = \".{s} }} \n", .{ parser.block.title, parser.block.tags });
+    // std.debug.print("block: {{ .title = \".{s}\", .tags = \".{} }} \n", .{ parser.block.title, parser.block.tags });
+    // std.debug.print("block: {{ .title = \".{s}\", .tags = \".{} }} \n", .{ parser.block.title, parser.block.tags });
+    // std.debug.print("block = {any}\n", .{parser.block});
+    // try json.stringify(parser.block, .{}, std.io.getStdErr().writer());
+    // std.debug.print("{}\n", .{parser.block});
+    // for (parser.block.ingredients.items) |item| {
+    //     std.debug.print("block: {s} \n", .{item});
+    // }
 
-    try std.testing.expectEqual(@as(usize, 14), parser.lines.items.len);
+    try std.testing.expectEqual(@as(usize, 27), parser.lines.items.len);
 }
 
 test "classify lines" {

@@ -4,7 +4,9 @@ Easy, fast and good recipe.
 
 ## tags
 
-breakfast, eggs, fast food
+breakfast, eggs,
+fast food,
+easy
 
 ## ingredients
 
@@ -16,7 +18,7 @@ breakfast, eggs, fast food
 - paprika
 
 ## instructions
-   
+
 how to do it...
 
 ## notes
