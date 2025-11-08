@@ -3,10 +3,7 @@
 Easy, fast and good recipe.
 
 ## tags
-
-breakfast, eggs,
-fast food,
-easy
+breakfast, eggs, fast food,
 
 ## ingredients
 

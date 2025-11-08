@@ -73,8 +73,6 @@ const Line = struct {
     }
 };
 
-const LineParsingError = error{ SameStateTransition, TransitionToNone, AlreadyComplete };
-
 const LineParsingState = struct {
     pub const CurrentType = enum { None, Title, Ingredients, Tags, Unknown };
     current: CurrentType = .None,
@@ -87,16 +85,7 @@ const LineParsingState = struct {
         return self.title and self.ingredients and self.tags;
     }
 
-    fn transition(self: *LineParsingState, to: CurrentType) LineParsingError!void {
-        if (self.isComplete()) {
-            return LineParsingError.AlreadyComplete;
-        }
-        // if (self.current == to) {
-        //     return LineParsingError.SameStateTransition;
-        // }
-        if (to == CurrentType.None) {
-            return LineParsingError.TransitionToNone;
-        }
+    fn transition(self: *LineParsingState, to: CurrentType) void {
         self.current = to;
     }
 };
@@ -121,6 +110,37 @@ pub const Parser = struct {
         self.block.ingredients.deinit(self.allocator);
     }
 
+    pub fn printBlock(self: *Parser) void {
+        std.debug.print("\n=== Recipe Block ===\n", .{});
+        std.debug.print("Title: {s}\n\n", .{self.block.title});
+
+        std.debug.print("Tags ({d}):\n", .{self.block.tags.items.len});
+        for (self.block.tags.items, 0..) |tag, i| {
+            std.debug.print("  [{d}] {s}\n", .{ i, tag });
+        }
+
+        std.debug.print("\nIngredients ({d}):\n", .{self.block.ingredients.items.len});
+        for (self.block.ingredients.items, 0..) |ingredient, i| {
+            std.debug.print("  [{d}] {s}\n", .{ i, ingredient });
+        }
+        std.debug.print("==================\n\n", .{});
+    }
+
+    pub fn prinLines(self: Parser) void {
+        for (self.lines.items) |line| {
+            if (line.type == LineType.Blank) continue;
+
+            switch (line.type) {
+                .Heading => |heading| {
+                    std.debug.print("  {{ .type = .Heading, .level = {d}, .position = {d}, .text = \"{s}\" }}\n", .{ heading.level, line.position, line.text });
+                },
+                else => {
+                    std.debug.print("  {{ .type = .{s}, .position = {d}, .text = \"{s}\" }}\n", .{ @tagName(line.type), line.position, line.text });
+                },
+            }
+        }
+    }
+
     pub fn parse(self: *Parser) !void {
         try self.classify_lines();
         try self.parse_lines();
@@ -140,22 +160,19 @@ pub const Parser = struct {
         for (self.lines.items) |line| {
             if (line.type == .Blank or line.type == .Empty) continue;
 
-            // std.debug.print("line, idx: {}, {d}", .{ line.type, index });
-            std.debug.print("parsing state: {}, line.type {} \n", .{ parsingState.current, line.type });
-
             if (line.type == LineType.Heading) {
                 const heading_text = MarkdownUtils.stripHeading(line.text);
 
                 if (line.type.Heading.level == 1) {
                     self.block.title = heading_text;
-                    try parsingState.transition(.Title);
+                    parsingState.transition(.Title);
                 } else if (line.type.Heading.level == 2) {
                     if (mem.indexOf(u8, heading_text, "tags")) |_| {
-                        try parsingState.transition(.Tags);
+                        parsingState.transition(.Tags);
                     } else if (mem.indexOf(u8, heading_text, "ingredients")) |_| {
-                        try parsingState.transition(.Ingredients);
+                        parsingState.transition(.Ingredients);
                     } else {
-                        try parsingState.transition(.Unknown);
+                        parsingState.transition(.Unknown);
                     }
                 }
             }
@@ -178,9 +195,6 @@ pub const Parser = struct {
                 }
             }
         }
-
-        // std.debug.print("stage: {} \n", .{parsingState.current});
-        // std.debug.print("title: {s}, ingredients: {s} \n", .{ self.block.title, self.block.ingredients });
     }
 };
 
@@ -194,29 +208,29 @@ test "parse recipe from filesystem" {
     defer parser.deinit();
     try parser.parse();
 
-    // for (parser.lines.items) |line| {
-    //     if (line.type == LineType.Blank) continue;
+    parser.printBlock();
+    // parser.prinLines();
 
-    //     switch (line.type) {
-    //         .Heading => |heading| {
-    //             std.debug.print("  {{ .type = .Heading, .level = {d}, .position = {d}, .text = \"{s}\" }}\n", .{ heading.level, line.position, line.text });
-    //         },
-    //         else => {
-    //             std.debug.print("  {{ .type = .{s}, .position = {d}, .text = \"{s}\" }}\n", .{ @tagName(line.type), line.position, line.text });
-    //         },
-    //     }
-    // }
-
-    // std.debug.print("block: {{ .title = \".{s}\", .tags = \".{} }} \n", .{ parser.block.title, parser.block.tags });
-    // std.debug.print("block: {{ .title = \".{s}\", .tags = \".{} }} \n", .{ parser.block.title, parser.block.tags });
-    // std.debug.print("block = {any}\n", .{parser.block});
-    // try json.stringify(parser.block, .{}, std.io.getStdErr().writer());
-    // std.debug.print("{}\n", .{parser.block});
-    // for (parser.block.ingredients.items) |item| {
-    //     std.debug.print("block: {s} \n", .{item});
-    // }
-
+    // Assert total lines parsed
     try std.testing.expectEqual(@as(usize, 27), parser.lines.items.len);
+
+    // Assert title
+    try std.testing.expectEqualStrings("Scrambled Eggs", parser.block.title);
+
+    // Assert ingredients count and content
+    try std.testing.expectEqual(@as(usize, 6), parser.block.ingredients.items.len);
+    try std.testing.expectEqualStrings("eggs", parser.block.ingredients.items[0]);
+    try std.testing.expectEqualStrings("onion or leek(praz)", parser.block.ingredients.items[1]);
+    try std.testing.expectEqualStrings("cheese", parser.block.ingredients.items[2]);
+    try std.testing.expectEqualStrings("salt", parser.block.ingredients.items[3]);
+    try std.testing.expectEqualStrings("pepper", parser.block.ingredients.items[4]);
+    try std.testing.expectEqualStrings("paprika", parser.block.ingredients.items[5]);
+
+    // Assert tags count and content
+    try std.testing.expectEqual(@as(usize, 3), parser.block.tags.items.len);
+    try std.testing.expectEqualStrings("breakfast, eggs,", parser.block.tags.items[0]);
+    try std.testing.expectEqualStrings("fast food,", parser.block.tags.items[1]);
+    try std.testing.expectEqualStrings("easy", parser.block.tags.items[2]);
 }
 
 test "classify lines" {
