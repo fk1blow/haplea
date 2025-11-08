@@ -1,6 +1,6 @@
 # Haplea
 
-A multi-feature Zig application combining markdown parsing, mDNS service discovery, and HTTP server capabilities.
+A recipe manager built with zig.
 
 ## Project Structure
 
