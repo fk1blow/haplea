@@ -12,7 +12,19 @@ chinese, quick, weeknight, one-pan, healthy, high-protein
 
 ## ingredients
 
-...
+- 500g chicken breast, cut into bite-sized pieces
+- 2 tbsp soy sauce (for marinade)
+- 2 tbsp vegetable oil
+- 1 cup carrots, sliced
+- 1 cup broccoli florets
+- 1 bell pepper, sliced
+- 1 cup snap peas
+- 2 cloves garlic, minced
+- 1 tbsp ginger, minced
+- 3 tbsp soy sauce (for sauce)
+- 1 tbsp oyster sauce
+- 1 tsp sesame oil
+- Cooked rice for serving
 
 ## instructions
 

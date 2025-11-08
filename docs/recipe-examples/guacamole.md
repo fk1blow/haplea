@@ -12,7 +12,12 @@ mexican, vegetarian, quick, party-food, healthy, vegan
 
 ## ingredients
 
-...
+- 3 ripe avocados
+- 2 ripe tomatoes, diced
+- 1/2 red onion, finely chopped
+- 1/4 cup fresh cilantro, chopped
+- 2 limes, juiced
+- 1/2 tsp salt (adjust to taste)
 
 ## instructions
 

@@ -12,7 +12,12 @@ italian, pasta, quick, comfort-food, dinner
 
 ## ingredients
 
-...
+- 400g spaghetti
+- 150g guanciale (or pancetta), diced
+- 4 large eggs
+- 100g pecorino romano, finely grated
+- Salt for pasta water
+- Black pepper, freshly ground
 
 ## instructions
 
