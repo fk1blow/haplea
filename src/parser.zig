@@ -180,18 +180,28 @@ pub const Parser = struct {
             if (line.type == LineType.List) {
                 if (parsingState.current == .Ingredients) {
                     const line_text = MarkdownUtils.stripListMarker(line.text);
-                    try self.block.ingredients.append(self.allocator, line_text);
+                    const trimmed = std.mem.trim(u8, line_text, " ");
+                    try self.block.ingredients.append(self.allocator, trimmed);
                 } else if (parsingState.current == .Tags) {
                     const line_text = MarkdownUtils.stripListMarker(line.text);
-                    try self.block.tags.append(self.allocator, line_text);
+                    const trimmed = std.mem.trim(u8, line_text, " ");
+                    try self.block.tags.append(self.allocator, trimmed);
                 }
             }
 
             if (line.type == LineType.Paragraph) {
+                var splitted_iter = std.mem.tokenizeAny(u8, line.text, ",");
+
                 if (parsingState.current == .Ingredients) {
-                    try self.block.ingredients.append(self.allocator, line.text);
+                    while (splitted_iter.next()) |word| {
+                        const trimmed = std.mem.trim(u8, word, " ");
+                        try self.block.ingredients.append(self.allocator, trimmed);
+                    }
                 } else if (parsingState.current == .Tags) {
-                    try self.block.tags.append(self.allocator, line.text);
+                    while (splitted_iter.next()) |word| {
+                        const trimmed = std.mem.trim(u8, word, " ");
+                        try self.block.tags.append(self.allocator, trimmed);
+                    }
                 }
             }
         }
@@ -208,11 +218,11 @@ test "parse recipe from filesystem" {
     defer parser.deinit();
     try parser.parse();
 
-    parser.printBlock();
-    // parser.prinLines();
+    // parser.printBlock();
+    parser.prinLines();
 
     // Assert total lines parsed
-    try std.testing.expectEqual(@as(usize, 27), parser.lines.items.len);
+    try std.testing.expectEqual(@as(usize, 25), parser.lines.items.len);
 
     // Assert title
     try std.testing.expectEqualStrings("Scrambled Eggs", parser.block.title);
@@ -227,10 +237,11 @@ test "parse recipe from filesystem" {
     try std.testing.expectEqualStrings("paprika", parser.block.ingredients.items[5]);
 
     // Assert tags count and content
-    try std.testing.expectEqual(@as(usize, 3), parser.block.tags.items.len);
-    try std.testing.expectEqualStrings("breakfast, eggs,", parser.block.tags.items[0]);
-    try std.testing.expectEqualStrings("fast food,", parser.block.tags.items[1]);
-    try std.testing.expectEqualStrings("easy", parser.block.tags.items[2]);
+    try std.testing.expectEqual(@as(usize, 4), parser.block.tags.items.len);
+    try std.testing.expectEqualStrings("breakfast", parser.block.tags.items[0]);
+    try std.testing.expectEqualStrings("eggs", parser.block.tags.items[1]);
+    try std.testing.expectEqualStrings("fast food", parser.block.tags.items[2]);
+    try std.testing.expectEqualStrings("easy", parser.block.tags.items[3]);
 }
 
 test "classify lines" {
