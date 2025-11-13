@@ -43,7 +43,7 @@ Parse markdown files for recipe storage and rendering.
 - Zig 0.15+ (install from [ziglang.org](https://ziglang.org/download/))
 - Node.js 18+ (for frontend development)
 
-### Building the Project
+### Building and Running
 
 ```bash
 # Build the project
@@ -52,11 +52,14 @@ zig build
 # Build in release mode
 zig build -Doptimize=ReleaseFast
 
-# Run the application
+# Run the application (parses hardcoded example recipe)
 zig build run
 
-# Run with options
+# Run with options (when server features are implemented)
 zig build run -- --enable-discovery --port 3000
+
+# Clean build cache
+rm -rf zig-cache zig-out
 ```
 
 ### Testing
@@ -68,6 +71,10 @@ zig build test
 # Run tests with output
 zig build test --summary all
 ```
+
+**Current test coverage:**
+- `src/markdown.zig` - 6 tests for generic markdown parsing
+- `src/recipe_extractor.zig` - 7 tests for recipe extraction and error handling
 
 ### Frontend Development
 
