@@ -3,13 +3,14 @@
 Easy, fast and good recipe.
 
 ## tags
-breakfast, eggs, fast food,
+
+breakfast, eggs, fast food, easy
 
 ## ingredients
 
-- eggs
+- eggs 
 - onion or leek(praz)
-- cheese
+- cheese  
 - salt
 - pepper
 - paprika
