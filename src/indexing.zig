@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const Posting = struct { document_id: u32, term_frequency: u8 };
+const Posting = struct { document_id: u32, term_frequency: u8, weight: u8 };
 
 const PostingList = struct {
     allocator: std.mem.Allocator,
@@ -35,8 +35,7 @@ pub const InvertedIndex = struct {
         while (it.next()) |entry| {
             // deallocate the key of the hash
             self.allocator.free(entry.key_ptr.*);
-            // deallocate the value at key
-            // by calling the array list's `deinit` method
+            // deallocate the posting list
             entry.value_ptr.deinit();
         }
         self.index.deinit();
@@ -49,7 +48,6 @@ pub const InvertedIndex = struct {
             gop.key_ptr.* = try self.allocator.dupe(u8, term);
             gop.value_ptr.* = PostingList.init(self.allocator);
         }
-        // try gop.value_ptr.append(self.allocator, posting);
         try gop.value_ptr.append(posting);
     }
 
@@ -59,14 +57,15 @@ pub const InvertedIndex = struct {
     }
 };
 
-test "test initial" {
+test "initial" {
     const allocator = std.testing.allocator;
 
     var index = InvertedIndex.init(allocator);
     defer index.deinit();
 
-    try index.addPosting("pasta", .{ .document_id = 12, .term_frequency = 6 });
-    try index.addPosting("pasta", .{ .document_id = 39, .term_frequency = 2 });
+    // try index.addPosting("pasta", .{ .document_id = 12, .term_frequency = 6 });
+    try index.addPosting("pasta", .{ .document_id = 39, .term_frequency = 2, .weight = 0b010 });
+    try index.addPosting("pasta", .{ .document_id = 2, .term_frequency = 1, .weight = 0b001 });
     // try index.addPosting("pasta", 43, 2);
 
     if (index.getPosting("pasta")) |value| {
