@@ -43,12 +43,12 @@ test "initial" {
     defer index.deinit();
 
     // try index.addPosting("pasta", .{ .document_id = 12, .term_frequency = 6 });
-    try index.addPosting("pasta", .{ .document_id = 39, .term_frequency = 2, .source_field = posting.Field.title });
-    try index.addPosting("pasta", .{ .document_id = 2, .term_frequency = 2, .source_field = posting.Field.ingredients });
+    try index.addPosting("pasta", .{ .document_id = 39, .term_frequency = 2, .field = posting.Field.title });
+    try index.addPosting("pasta", .{ .document_id = 2, .term_frequency = 2, .field = posting.Field.ingredients });
 
     if (index.getPostings("pasta")) |postings| {
         for (postings.items.items) |item| {
-            std.debug.print("found: {any}, weight: {d} \n", .{ item, item.source_field.getWeight() });
+            std.debug.print("found: {any}, weight: {d} \n", .{ item, item.field.getWeight() });
         }
     }
 }

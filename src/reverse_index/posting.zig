@@ -17,11 +17,11 @@ pub const Field = enum(u8) {
 pub const Posting = struct {
     document_id: u32,
     term_frequency: u8,
-    source_field: Field,
+    field: Field,
 
     pub fn getWeight(self: Posting) u8 {
         var w: u8 = 0;
-        var iter = self.source_field.iterator();
+        var iter = self.field.iterator();
         while (iter.next()) |field| {
             w += field.weight();
         }
