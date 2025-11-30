@@ -1,6 +1,6 @@
 const std = @import("std");
 const mem = std.mem;
-const markdown = @import("markdown.zig");
+const markdown = @import("markdown/parser.zig");
 const Line = markdown.Line;
 const LineType = markdown.LineType;
 
@@ -217,7 +217,7 @@ test "RecipeExtractor - basic extraction" {
         \\- butter
     ;
 
-    var parser = markdown.MarkdownParser.init(allocator, source);
+    var parser = markdown.Parser.init(allocator, source);
     defer parser.deinit();
     const lines = try parser.parse();
 
@@ -247,7 +247,7 @@ test "RecipeExtractor - case insensitive headings" {
         \\item
     ;
 
-    var parser = markdown.MarkdownParser.init(allocator, source);
+    var parser = markdown.Parser.init(allocator, source);
     defer parser.deinit();
     const lines = try parser.parse();
 
@@ -274,7 +274,7 @@ test "RecipeExtractor - exact match prevents substring false positives" {
         \\real
     ;
 
-    var parser = markdown.MarkdownParser.init(allocator, source);
+    var parser = markdown.Parser.init(allocator, source);
     defer parser.deinit();
     const lines = try parser.parse();
 
@@ -304,7 +304,7 @@ test "RecipeExtractor - mixed list and paragraph format" {
         \\- item3
     ;
 
-    var parser = markdown.MarkdownParser.init(allocator, source);
+    var parser = markdown.Parser.init(allocator, source);
     defer parser.deinit();
     const lines = try parser.parse();
 
@@ -328,7 +328,7 @@ test "RecipeExtractor - missing title error" {
         \\item
     ;
 
-    var parser = markdown.MarkdownParser.init(allocator, source);
+    var parser = markdown.Parser.init(allocator, source);
     defer parser.deinit();
     const lines = try parser.parse();
 
@@ -344,7 +344,7 @@ test "RecipeExtractor - missing sections error" {
 
     const source = "# Recipe Title\n";
 
-    var parser = markdown.MarkdownParser.init(allocator, source);
+    var parser = markdown.Parser.init(allocator, source);
     defer parser.deinit();
     const lines = try parser.parse();
 
@@ -364,7 +364,7 @@ test "RecipeExtractor - empty sections error" {
         \\## ingredients
     ;
 
-    var parser = markdown.MarkdownParser.init(allocator, source);
+    var parser = markdown.Parser.init(allocator, source);
     defer parser.deinit();
     const lines = try parser.parse();
 
@@ -386,7 +386,7 @@ test "RecipeExtractor - multi-word title" {
         \\eggs
     ;
 
-    var parser = markdown.MarkdownParser.init(allocator, source);
+    var parser = markdown.Parser.init(allocator, source);
     defer parser.deinit();
     const lines = try parser.parse();
 
@@ -412,7 +412,7 @@ test "RecipeExtractor - title with multiple spaces" {
         \\item
     ;
 
-    var parser = markdown.MarkdownParser.init(allocator, source);
+    var parser = markdown.Parser.init(allocator, source);
     defer parser.deinit();
     const lines = try parser.parse();
 
@@ -437,7 +437,7 @@ test "RecipeExtractor - title with special characters" {
         \\apples
     ;
 
-    var parser = markdown.MarkdownParser.init(allocator, source);
+    var parser = markdown.Parser.init(allocator, source);
     defer parser.deinit();
     const lines = try parser.parse();
 

@@ -26,7 +26,7 @@ pub fn build(b: *std.Build) void {
     // Tests for markdown parser module
     const markdown_tests = b.addTest(.{
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/markdown.zig"),
+            .root_source_file = b.path("src/markdown/parser.zig"),
             .target = target,
             .optimize = optimize,
         }),
