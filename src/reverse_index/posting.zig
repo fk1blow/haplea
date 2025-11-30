@@ -1,11 +1,11 @@
 const std = @import("std");
 
-pub const PostingField = enum(u8) {
+pub const Field = enum(u8) {
     title,
     tags,
     ingredients,
 
-    pub fn getWeight(self: PostingField) u8 {
+    pub fn getWeight(self: Field) u8 {
         return switch (self) {
             .title => 4,
             .tags => 2,
@@ -14,12 +14,12 @@ pub const PostingField = enum(u8) {
     }
 };
 
-pub const PostingItem = struct {
+pub const Posting = struct {
     document_id: u32,
     term_frequency: u8,
-    source_field: PostingField,
+    source_field: Field,
 
-    pub fn getWeight(self: PostingItem) u8 {
+    pub fn getWeight(self: Posting) u8 {
         var w: u8 = 0;
         var iter = self.source_field.iterator();
         while (iter.next()) |field| {
@@ -29,19 +29,19 @@ pub const PostingItem = struct {
     }
 };
 
-pub const PostingList = struct {
+pub const Postings = struct {
     allocator: std.mem.Allocator,
-    postings: std.ArrayList(PostingItem),
+    items: std.ArrayList(Posting),
 
-    pub fn init(allocator: std.mem.Allocator) PostingList {
-        return .{ .allocator = allocator, .postings = std.ArrayList(PostingItem){} };
+    pub fn init(allocator: std.mem.Allocator) Postings {
+        return .{ .allocator = allocator, .items = std.ArrayList(Posting){} };
     }
 
-    pub fn deinit(self: *PostingList) void {
-        self.postings.deinit(self.allocator);
+    pub fn deinit(self: *Postings) void {
+        self.items.deinit(self.allocator);
     }
 
-    pub fn append(self: *PostingList, item: PostingItem) !void {
-        try self.postings.append(self.allocator, item);
+    pub fn append(self: *Postings, item: Posting) !void {
+        try self.items.append(self.allocator, item);
     }
 };

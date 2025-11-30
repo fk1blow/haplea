@@ -3,10 +3,10 @@ const posting = @import("reverse_index/posting.zig");
 
 pub const ReverseIndex = struct {
     allocator: std.mem.Allocator,
-    index: std.StringHashMap(posting.PostingList),
+    index: std.StringHashMap(posting.Postings),
 
     pub fn init(allocator: std.mem.Allocator) ReverseIndex {
-        return ReverseIndex{ .allocator = allocator, .index = std.StringHashMap(posting.PostingList).init(allocator) };
+        return ReverseIndex{ .allocator = allocator, .index = std.StringHashMap(posting.Postings).init(allocator) };
     }
 
     pub fn deinit(self: *ReverseIndex) void {
@@ -20,17 +20,17 @@ pub const ReverseIndex = struct {
         self.index.deinit();
     }
 
-    pub fn addPosting(self: *ReverseIndex, term: []const u8, item: posting.PostingItem) !void {
+    pub fn addPosting(self: *ReverseIndex, term: []const u8, item: posting.Posting) !void {
         const gop = try self.index.getOrPut(term);
         if (!gop.found_existing) {
             // clone the term
             gop.key_ptr.* = try self.allocator.dupe(u8, term);
-            gop.value_ptr.* = posting.PostingList.init(self.allocator);
+            gop.value_ptr.* = posting.Postings.init(self.allocator);
         }
         try gop.value_ptr.append(item);
     }
 
-    pub fn getPosting(self: *ReverseIndex, term: []const u8) ?posting.PostingList {
+    pub fn getPostings(self: *ReverseIndex, term: []const u8) ?posting.Postings {
         const value = self.index.get(term);
         return value;
     }
@@ -43,11 +43,11 @@ test "initial" {
     defer index.deinit();
 
     // try index.addPosting("pasta", .{ .document_id = 12, .term_frequency = 6 });
-    try index.addPosting("pasta", .{ .document_id = 39, .term_frequency = 2, .source_field = posting.PostingField.title });
-    try index.addPosting("pasta", .{ .document_id = 2, .term_frequency = 2, .source_field = posting.PostingField.ingredients });
+    try index.addPosting("pasta", .{ .document_id = 39, .term_frequency = 2, .source_field = posting.Field.title });
+    try index.addPosting("pasta", .{ .document_id = 2, .term_frequency = 2, .source_field = posting.Field.ingredients });
 
-    if (index.getPosting("pasta")) |value| {
-        for (value.postings.items) |item| {
+    if (index.getPostings("pasta")) |postings| {
+        for (postings.items.items) |item| {
             std.debug.print("found: {any}, weight: {d} \n", .{ item, item.source_field.getWeight() });
         }
     }
