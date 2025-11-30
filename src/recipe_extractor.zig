@@ -52,19 +52,21 @@ const ExtractionState = struct {
 
 pub const RecipeData = struct {
     allocator: mem.Allocator,
-    title: []const u8 = "",
+    title: std.ArrayList([]const u8),
     tags: std.ArrayList([]const u8),
     ingredients: std.ArrayList([]const u8),
 
     pub fn init(allocator: mem.Allocator) RecipeData {
         return .{
             .allocator = allocator,
+            .title = std.ArrayList([]const u8){},
             .tags = std.ArrayList([]const u8){},
             .ingredients = std.ArrayList([]const u8){},
         };
     }
 
     pub fn deinit(self: *RecipeData) void {
+        self.title.deinit(self.allocator);
         self.tags.deinit(self.allocator);
         self.ingredients.deinit(self.allocator);
     }
@@ -112,7 +114,7 @@ pub const RecipeExtractor = struct {
     }
 
     fn validate(self: *RecipeExtractor) !void {
-        if (!self.state.seen_title or self.data.title.len == 0) {
+        if (!self.state.seen_title or self.data.title.items.len == 0) {
             return RecipeError.MissingTitle;
         }
         if (!self.state.seen_tags) {
@@ -154,7 +156,11 @@ pub const RecipeExtractor = struct {
         const heading_text = MarkdownUtils.stripHeading(line.text);
 
         if (line.type.Heading.level == 1) {
-            self.data.title = heading_text;
+            // Split title into words by space
+            var iter = mem.tokenizeScalar(u8, heading_text, ' ');
+            while (iter.next()) |word| {
+                try self.data.title.append(self.allocator, word);
+            }
             self.state.transition(.Title);
         } else if (line.type.Heading.level >= 2) {
             // Try exact match first, then substring
@@ -219,7 +225,9 @@ test "RecipeExtractor - basic extraction" {
     defer extractor.deinit();
     const data = try extractor.extract(lines);
 
-    try std.testing.expectEqualStrings("Scrambled Eggs", data.title);
+    try std.testing.expectEqual(@as(usize, 2), data.title.items.len);
+    try std.testing.expectEqualStrings("Scrambled", data.title.items[0]);
+    try std.testing.expectEqualStrings("Eggs", data.title.items[1]);
     try std.testing.expectEqual(@as(usize, 2), data.tags.items.len);
     try std.testing.expectEqualStrings("breakfast", data.tags.items[0]);
     try std.testing.expectEqualStrings("easy", data.tags.items[1]);
@@ -247,6 +255,8 @@ test "RecipeExtractor - case insensitive headings" {
     defer extractor.deinit();
     const data = try extractor.extract(lines);
 
+    try std.testing.expectEqual(@as(usize, 1), data.title.items.len);
+    try std.testing.expectEqualStrings("Recipe", data.title.items[0]);
     try std.testing.expect(data.tags.items.len > 0);
     try std.testing.expect(data.ingredients.items.len > 0);
 }
@@ -272,6 +282,8 @@ test "RecipeExtractor - exact match prevents substring false positives" {
     defer extractor.deinit();
     const data = try extractor.extract(lines);
 
+    try std.testing.expectEqual(@as(usize, 1), data.title.items.len);
+    try std.testing.expectEqualStrings("Recipe", data.title.items[0]);
     // "hashtags" should match due to substring, but "tags" should override with exact match
     try std.testing.expectEqual(@as(usize, 2), data.tags.items.len);
     try std.testing.expectEqualStrings("social", data.tags.items[0]);
@@ -300,6 +312,8 @@ test "RecipeExtractor - mixed list and paragraph format" {
     defer extractor.deinit();
     const data = try extractor.extract(lines);
 
+    try std.testing.expectEqual(@as(usize, 1), data.title.items.len);
+    try std.testing.expectEqualStrings("Recipe", data.title.items[0]);
     try std.testing.expectEqual(@as(usize, 4), data.tags.items.len);
     try std.testing.expectEqual(@as(usize, 3), data.ingredients.items.len);
 }
@@ -359,4 +373,80 @@ test "RecipeExtractor - empty sections error" {
 
     const result = extractor.extract(lines);
     try std.testing.expectError(RecipeError.EmptyTags, result);
+}
+
+test "RecipeExtractor - multi-word title" {
+    const allocator = std.testing.allocator;
+
+    const source =
+        \\# Easy Scrambled Eggs Recipe
+        \\## tags
+        \\breakfast
+        \\## ingredients
+        \\eggs
+    ;
+
+    var parser = markdown.MarkdownParser.init(allocator, source);
+    defer parser.deinit();
+    const lines = try parser.parse();
+
+    var extractor = RecipeExtractor.init(allocator);
+    defer extractor.deinit();
+    const data = try extractor.extract(lines);
+
+    try std.testing.expectEqual(@as(usize, 4), data.title.items.len);
+    try std.testing.expectEqualStrings("Easy", data.title.items[0]);
+    try std.testing.expectEqualStrings("Scrambled", data.title.items[1]);
+    try std.testing.expectEqualStrings("Eggs", data.title.items[2]);
+    try std.testing.expectEqualStrings("Recipe", data.title.items[3]);
+}
+
+test "RecipeExtractor - title with multiple spaces" {
+    const allocator = std.testing.allocator;
+
+    const source =
+        \\# Hello   World
+        \\## tags
+        \\test
+        \\## ingredients
+        \\item
+    ;
+
+    var parser = markdown.MarkdownParser.init(allocator, source);
+    defer parser.deinit();
+    const lines = try parser.parse();
+
+    var extractor = RecipeExtractor.init(allocator);
+    defer extractor.deinit();
+    const data = try extractor.extract(lines);
+
+    // tokenizeScalar skips empty tokens from multiple spaces
+    try std.testing.expectEqual(@as(usize, 2), data.title.items.len);
+    try std.testing.expectEqualStrings("Hello", data.title.items[0]);
+    try std.testing.expectEqualStrings("World", data.title.items[1]);
+}
+
+test "RecipeExtractor - title with special characters" {
+    const allocator = std.testing.allocator;
+
+    const source =
+        \\# Grandma's Apple Pie
+        \\## tags
+        \\dessert
+        \\## ingredients
+        \\apples
+    ;
+
+    var parser = markdown.MarkdownParser.init(allocator, source);
+    defer parser.deinit();
+    const lines = try parser.parse();
+
+    var extractor = RecipeExtractor.init(allocator);
+    defer extractor.deinit();
+    const data = try extractor.extract(lines);
+
+    try std.testing.expectEqual(@as(usize, 3), data.title.items.len);
+    try std.testing.expectEqualStrings("Grandma's", data.title.items[0]);
+    try std.testing.expectEqualStrings("Apple", data.title.items[1]);
+    try std.testing.expectEqualStrings("Pie", data.title.items[2]);
 }
