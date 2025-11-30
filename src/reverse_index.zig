@@ -1,15 +1,15 @@
 const std = @import("std");
-const posting = @import("posting.zig");
+const posting = @import("reverse_index/posting.zig");
 
-pub const InvertedIndex = struct {
+pub const ReverseIndex = struct {
     allocator: std.mem.Allocator,
     index: std.StringHashMap(posting.PostingList),
 
-    pub fn init(allocator: std.mem.Allocator) InvertedIndex {
-        return InvertedIndex{ .allocator = allocator, .index = std.StringHashMap(posting.PostingList).init(allocator) };
+    pub fn init(allocator: std.mem.Allocator) ReverseIndex {
+        return ReverseIndex{ .allocator = allocator, .index = std.StringHashMap(posting.PostingList).init(allocator) };
     }
 
-    pub fn deinit(self: *InvertedIndex) void {
+    pub fn deinit(self: *ReverseIndex) void {
         var it = self.index.iterator();
         while (it.next()) |entry| {
             // deallocate the key of the hash
@@ -20,7 +20,7 @@ pub const InvertedIndex = struct {
         self.index.deinit();
     }
 
-    pub fn addPosting(self: *InvertedIndex, term: []const u8, item: posting.PostingItem) !void {
+    pub fn addPosting(self: *ReverseIndex, term: []const u8, item: posting.PostingItem) !void {
         const gop = try self.index.getOrPut(term);
         if (!gop.found_existing) {
             // clone the term
@@ -30,7 +30,7 @@ pub const InvertedIndex = struct {
         try gop.value_ptr.append(item);
     }
 
-    pub fn getPosting(self: *InvertedIndex, term: []const u8) ?posting.PostingList {
+    pub fn getPosting(self: *ReverseIndex, term: []const u8) ?posting.PostingList {
         const value = self.index.get(term);
         return value;
     }
@@ -39,7 +39,7 @@ pub const InvertedIndex = struct {
 test "initial" {
     const allocator = std.testing.allocator;
 
-    var index = InvertedIndex.init(allocator);
+    var index = ReverseIndex.init(allocator);
     defer index.deinit();
 
     // try index.addPosting("pasta", .{ .document_id = 12, .term_frequency = 6 });
