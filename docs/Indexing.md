@@ -27,6 +27,16 @@ where do i start or what do i need to get started?
     - Consider: deduplicating recipe IDs in posting lists
         - same recipe shouldn't appear twice for the same trigram even if "tomato" appears in both title and ingredients
 
+## metadata extraction
+
+We need some sort of ranking so that we can differentiate between a token found on the second
+paragraph, and a token found on the recipe's title.
+
+A document that matches a token on the recipe's title would be ranked higher
+than one which contains the token at the end of the recipe.
+
+Ranking is: **title > tags > ingredients**
+
 ## resources
 
 https://www.youtube.com/watch?v=iHHqnyThrqE
