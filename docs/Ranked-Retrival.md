@@ -8,8 +8,8 @@ score(recipe, query) = sum of (times each query term appears in recipe)
 
 let's document the main terms:
 
-- DF Document Frequency: how many recipes contain the term
 - TF Term Frequency: how many times "term" appears in the recipe
+- DF Document Frequency: how many recipes contain the term
 - IDF Inverse Document Frequency
 
 ## indexing time

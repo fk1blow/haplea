@@ -3,10 +3,10 @@ const posting = @import("reverse_index/posting.zig");
 
 pub const ReverseIndex = struct {
     allocator: std.mem.Allocator,
-    index: std.StringHashMap(posting.PostingsList),
+    index: std.StringHashMap(posting.PostingList),
 
     pub fn init(allocator: std.mem.Allocator) ReverseIndex {
-        return ReverseIndex{ .allocator = allocator, .index = std.StringHashMap(posting.PostingsList).init(allocator) };
+        return ReverseIndex{ .allocator = allocator, .index = std.StringHashMap(posting.PostingList).init(allocator) };
     }
 
     pub fn deinit(self: *ReverseIndex) void {
@@ -25,29 +25,28 @@ pub const ReverseIndex = struct {
         if (!gop.found_existing) {
             // clone the term
             gop.key_ptr.* = try self.allocator.dupe(u8, term);
-            gop.value_ptr.* = posting.PostingsList.init(self.allocator);
+            gop.value_ptr.* = posting.PostingList.init(self.allocator);
         }
         try gop.value_ptr.append(item);
     }
 
-    pub fn getPostings(self: *ReverseIndex, term: []const u8) ?posting.PostingsList {
-        const value = self.index.get(term);
-        return value;
+    pub fn indexDocument(self: *ReverseIndex) {
+        // TODO
     }
 };
 
 test "initial" {
     const allocator = std.testing.allocator;
 
-    var index = ReverseIndex.init(allocator);
-    defer index.deinit();
+    var ri = ReverseIndex.init(allocator);
+    defer ri.deinit();
 
-    try index.addPosting("pasta", .{ .document_id = 39, .term_frequency = 2, .field = posting.Field.title });
-    try index.addPosting("pasta", .{ .document_id = 2, .term_frequency = 2, .field = posting.Field.ingredients });
+    try ri.addPosting("pasta", .{ .document_id = 39, .term_frequency = 2, .source_field = posting.SourceField.title });
+    try ri.addPosting("pasta", .{ .document_id = 2, .term_frequency = 2, .source_field = posting.SourceField.ingredients });
 
-    if (index.getPostings("pasta")) |postings| {
+    if (ri.index.get("pasta")) |postings| {
         for (postings.items.items) |item| {
-            std.debug.print("found: {any}, weight: {d} \n", .{ item, item.field.getWeight() });
+            std.debug.print("found: {any}, weight: {d} \n", .{ item, item.source_field.getWeight() });
         }
     }
 }
