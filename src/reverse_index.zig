@@ -3,10 +3,10 @@ const posting = @import("reverse_index/posting.zig");
 
 pub const ReverseIndex = struct {
     allocator: std.mem.Allocator,
-    index: std.StringHashMap(posting.Postings),
+    index: std.StringHashMap(posting.PostingsList),
 
     pub fn init(allocator: std.mem.Allocator) ReverseIndex {
-        return ReverseIndex{ .allocator = allocator, .index = std.StringHashMap(posting.Postings).init(allocator) };
+        return ReverseIndex{ .allocator = allocator, .index = std.StringHashMap(posting.PostingsList).init(allocator) };
     }
 
     pub fn deinit(self: *ReverseIndex) void {
@@ -25,12 +25,12 @@ pub const ReverseIndex = struct {
         if (!gop.found_existing) {
             // clone the term
             gop.key_ptr.* = try self.allocator.dupe(u8, term);
-            gop.value_ptr.* = posting.Postings.init(self.allocator);
+            gop.value_ptr.* = posting.PostingsList.init(self.allocator);
         }
         try gop.value_ptr.append(item);
     }
 
-    pub fn getPostings(self: *ReverseIndex, term: []const u8) ?posting.Postings {
+    pub fn getPostings(self: *ReverseIndex, term: []const u8) ?posting.PostingsList {
         const value = self.index.get(term);
         return value;
     }
@@ -42,7 +42,6 @@ test "initial" {
     var index = ReverseIndex.init(allocator);
     defer index.deinit();
 
-    // try index.addPosting("pasta", .{ .document_id = 12, .term_frequency = 6 });
     try index.addPosting("pasta", .{ .document_id = 39, .term_frequency = 2, .field = posting.Field.title });
     try index.addPosting("pasta", .{ .document_id = 2, .term_frequency = 2, .field = posting.Field.ingredients });
 
