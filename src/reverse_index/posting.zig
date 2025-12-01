@@ -1,11 +1,12 @@
 const std = @import("std");
 
-pub const SourceField = enum(u8) {
+// TODO rename
+pub const Field = enum(u8) {
     title,
     tags,
     ingredients,
 
-    pub fn getWeight(self: SourceField) u8 {
+    pub fn getWeight(self: Field) u8 {
         return switch (self) {
             .title => 4,
             .tags => 2,
@@ -15,13 +16,17 @@ pub const SourceField = enum(u8) {
 };
 
 pub const Posting = struct {
-    document_id: u32,
+    doc_id: u32,
     term_frequency: u8,
-    source_field: SourceField,
+    field: Field,
+
+    pub fn init(id: u32, field: Field) Posting {
+        return Posting{ .doc_id = id, .term_frequency = 0, .field = field };
+    }
 
     pub fn getWeight(self: Posting) u8 {
         var w: u8 = 0;
-        var iter = self.source_field.iterator();
+        var iter = self.field.iterator();
         while (iter.next()) |field| {
             w += field.weight();
         }
