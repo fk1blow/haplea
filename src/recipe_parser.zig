@@ -180,7 +180,12 @@ pub const RecipeParser = struct {
 
     fn handleList(self: *RecipeParser, line: Line) !void {
         const line_text = MarkdownUtils.stripListMarker(line.text);
-        try self.appendToCurrentSection(line_text);
+        // try self.appendToCurrentSection(line_text);
+        var iter = mem.tokenizeAny(u8, line_text, ",;. ");
+        while (iter.next()) |token| {
+            if (token.len == 0) continue;
+            try self.appendToCurrentSection(token);
+        }
     }
 
     fn handleParagraph(self: *RecipeParser, line: Line) !void {
@@ -191,7 +196,7 @@ pub const RecipeParser = struct {
     }
 
     fn appendToCurrentSection(self: *RecipeParser, text: []const u8) !void {
-        const trimmed = mem.trim(u8, text, " \t\r\n");
+        const trimmed = mem.trim(u8, text, " \t\r\n,.;");
         if (trimmed.len == 0) return; // Skip empty tokens
 
         switch (self.state.current) {
@@ -214,6 +219,7 @@ test "RecipeParser - basic parsing" {
         \\## ingredients
         \\- eggs
         \\- butter
+        \\- ham, or bacon
     ;
 
     var md_parser = markdown.Parser.init(allocator, source);
@@ -230,9 +236,12 @@ test "RecipeParser - basic parsing" {
     try std.testing.expectEqual(@as(usize, 2), data.tags.items.len);
     try std.testing.expectEqualStrings("breakfast", data.tags.items[0]);
     try std.testing.expectEqualStrings("easy", data.tags.items[1]);
-    try std.testing.expectEqual(@as(usize, 2), data.ingredients.items.len);
+    try std.testing.expectEqual(@as(usize, 5), data.ingredients.items.len);
     try std.testing.expectEqualStrings("eggs", data.ingredients.items[0]);
     try std.testing.expectEqualStrings("butter", data.ingredients.items[1]);
+    try std.testing.expectEqualStrings("ham", data.ingredients.items[2]);
+    try std.testing.expectEqualStrings("or", data.ingredients.items[3]);
+    try std.testing.expectEqualStrings("bacon", data.ingredients.items[4]);
 }
 
 test "RecipeParser - case insensitive headings" {
