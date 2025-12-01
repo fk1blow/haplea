@@ -26,9 +26,9 @@ pub const ReverseIndex = struct {
         var postings_map = std.StringHashMap(posting.Posting).init(self.allocator);
         defer postings_map.deinit();
 
-        try getPostingsForTermsList(&postings_map, document.data.title, document.doc_id, .title);
-        try getPostingsForTermsList(&postings_map, document.data.tags, document.doc_id, .tags);
-        try getPostingsForTermsList(&postings_map, document.data.ingredients, document.doc_id, .ingredients);
+        try updateDocumentPostings(&postings_map, document.data.title, document.doc_id, .title);
+        try updateDocumentPostings(&postings_map, document.data.tags, document.doc_id, .tags);
+        try updateDocumentPostings(&postings_map, document.data.ingredients, document.doc_id, .ingredients);
 
         var postings_map_it = postings_map.iterator();
         while (postings_map_it.next()) |entry| {
@@ -36,7 +36,7 @@ pub const ReverseIndex = struct {
         }
     }
 
-    fn getPostingsForTermsList(postings_map: *std.StringHashMap(posting.Posting), terms_list: std.ArrayList([]const u8), doc_id: u32, field: posting.Field) !void {
+    fn updateDocumentPostings(postings_map: *std.StringHashMap(posting.Posting), terms_list: std.ArrayList([]const u8), doc_id: u32, field: posting.Field) !void {
         for (terms_list.items) |term| {
             const gop = try postings_map.getOrPut(term);
 
@@ -46,6 +46,9 @@ pub const ReverseIndex = struct {
             }
             // TODO should update the `field` as well
             gop.value_ptr.term_frequency = gop.value_ptr.term_frequency + 1;
+            if (gop.value_ptr.field != field) {
+                gop.value_ptr.term_frequency = gop.value_ptr.term_frequency + 1;
+            }
         }
     }
 
