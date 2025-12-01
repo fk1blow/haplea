@@ -16,7 +16,10 @@ let's document the main terms:
 
 - parse recipe doc and extract terms
 - build an intermediate hash map
-- for each term in recipe, update the hash map(TF/count, field)
+- for each term in the recipe/document
+    - find the term in the hashmap
+    - update the `count` field
+- build a posting list for each term in the hashmap
 
 ```
 doc_terms = {
