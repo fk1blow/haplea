@@ -44,6 +44,7 @@ pub const ReverseIndex = struct {
                 gop.key_ptr.* = term;
                 gop.value_ptr.* = posting.Posting.init(doc_id, field);
             }
+            // TODO should update the `field` as well
             gop.value_ptr.term_frequency = gop.value_ptr.term_frequency + 1;
         }
     }
@@ -124,9 +125,9 @@ test "initial" {
     defer parser2.deinit();
     const lines2 = try parser2.parse();
 
-    var recipe_parser2 = recipeParser.RecipeParser.init(allocator);
-    defer recipe_parser2.deinit();
-    const recipe_data2 = try recipe_parser2.parse(lines2);
+    // var recipe_parser2 = recipeParser.RecipeParser.init(allocator);
+    // defer recipe_parser2.deinit();
+    const recipe_data2 = try recipe_parser.parse(lines2);
 
     // var ri = ReverseIndex.init(allocator);
     // defer ri.deinit();
