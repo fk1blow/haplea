@@ -32,7 +32,7 @@ pub const ReverseIndex = struct {
 
         var postings_map_it = postings_map.iterator();
         while (postings_map_it.next()) |entry| {
-            try self.addPosting(entry.key_ptr.*, entry.value_ptr.*);
+            try self.updateIndex(entry.key_ptr.*, entry.value_ptr.*);
         }
     }
 
@@ -43,22 +43,20 @@ pub const ReverseIndex = struct {
             if (!gop.found_existing) {
                 gop.key_ptr.* = term;
                 gop.value_ptr.* = posting.Posting.init(doc_id, field);
+            } else {
+                gop.value_ptr.addField(field);
             }
-            // TODO should update the `field` as well
-            gop.value_ptr.term_frequency = gop.value_ptr.term_frequency + 1;
-            if (gop.value_ptr.field != field) {
-                gop.value_ptr.term_frequency = gop.value_ptr.term_frequency + 1;
-            }
+            gop.value_ptr.term_frequency += 1;
         }
     }
 
-    fn addPosting(self: *ReverseIndex, term: []const u8, item: posting.Posting) !void {
-        const gop = try self.index.getOrPut(term);
+    fn updateIndex(self: *ReverseIndex, key: []const u8, posting_item: posting.Posting) !void {
+        const gop = try self.index.getOrPut(key);
         if (!gop.found_existing) {
-            gop.key_ptr.* = try self.allocator.dupe(u8, term);
+            gop.key_ptr.* = try self.allocator.dupe(u8, key);
             gop.value_ptr.* = posting.PostingList.init(self.allocator);
         }
-        try gop.value_ptr.append(item);
+        try gop.value_ptr.append(posting_item);
     }
 
     pub fn debugIndex(self: *ReverseIndex) void {
@@ -69,11 +67,15 @@ pub const ReverseIndex = struct {
 
             std.debug.print("'{s}' ({d} postings)\n", .{ term, postings.len });
             for (postings) |item| {
-                std.debug.print("   ─ doc:{d}  freq:{d}  field:{s}\n", .{
+                std.debug.print("   ─ doc:{d}  freq:{d}  fields:", .{
                     item.doc_id,
                     item.term_frequency,
-                    @tagName(item.field),
                 });
+                var iter = item.fields.iterator();
+                while (iter.next()) |f| {
+                    std.debug.print(" {s}", .{@tagName(f)});
+                }
+                std.debug.print("\n", .{});
             }
             std.debug.print("\n", .{});
         }

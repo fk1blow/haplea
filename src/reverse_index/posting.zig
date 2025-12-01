@@ -1,36 +1,28 @@
 const std = @import("std");
 
-// TODO rename
-pub const Field = enum(u8) {
+pub const Field = enum {
     title,
     tags,
     ingredients,
-
-    pub fn getWeight(self: Field) u8 {
-        return switch (self) {
-            .title => 4,
-            .tags => 2,
-            .ingredients => 1,
-        };
-    }
 };
+
+pub const FieldSet = std.EnumSet(Field);
 
 pub const Posting = struct {
     doc_id: u32,
     term_frequency: u8,
-    field: Field,
+    fields: FieldSet,
 
     pub fn init(id: u32, field: Field) Posting {
-        return Posting{ .doc_id = id, .term_frequency = 0, .field = field };
+        return Posting{
+            .doc_id = id,
+            .term_frequency = 0,
+            .fields = FieldSet.initOne(field),
+        };
     }
 
-    pub fn getWeight(self: Posting) u8 {
-        var w: u8 = 0;
-        var iter = self.field.iterator();
-        while (iter.next()) |field| {
-            w += field.weight();
-        }
-        return w;
+    pub fn addField(self: *Posting, field: Field) void {
+        self.fields.insert(field);
     }
 };
 
