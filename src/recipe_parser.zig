@@ -189,8 +189,9 @@ pub const RecipeParser = struct {
     }
 
     fn handleParagraph(self: *RecipeParser, line: Line) !void {
-        var iter = mem.tokenizeAny(u8, line.text, ",");
+        var iter = mem.tokenizeAny(u8, line.text, ",;. ");
         while (iter.next()) |token| {
+            if (token.len == 0) continue;
             try self.appendToCurrentSection(token);
         }
     }
@@ -457,4 +458,35 @@ test "RecipeParser - title with special characters" {
     try std.testing.expectEqualStrings("Grandma's", data.title.items[0]);
     try std.testing.expectEqualStrings("Apple", data.title.items[1]);
     try std.testing.expectEqualStrings("Pie", data.title.items[2]);
+}
+
+test "RecipeParser - lists and paragraphs both split into words" {
+    const allocator = std.testing.allocator;
+
+    const source =
+        \\# Recipe
+        \\## tags
+        \\quick and easy
+        \\## ingredients
+        \\- olive oil
+    ;
+
+    var md_parser = markdown.Parser.init(allocator, source);
+    defer md_parser.deinit();
+    const lines = try md_parser.parse();
+
+    var recipe_parser = RecipeParser.init(allocator);
+    defer recipe_parser.deinit();
+    const data = try recipe_parser.parse(lines);
+
+    // Paragraph splits into words
+    try std.testing.expectEqual(@as(usize, 3), data.tags.items.len);
+    try std.testing.expectEqualStrings("quick", data.tags.items[0]);
+    try std.testing.expectEqualStrings("and", data.tags.items[1]);
+    try std.testing.expectEqualStrings("easy", data.tags.items[2]);
+
+    // List also splits into words
+    try std.testing.expectEqual(@as(usize, 2), data.ingredients.items.len);
+    try std.testing.expectEqualStrings("olive", data.ingredients.items[0]);
+    try std.testing.expectEqualStrings("oil", data.ingredients.items[1]);
 }
