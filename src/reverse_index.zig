@@ -22,39 +22,56 @@ pub const ReverseIndex = struct {
         self.index.deinit();
     }
 
+    pub fn indexDocument(self: *ReverseIndex, document: struct { doc_id: u32, data: recipeParser.RecipeData }) !void {
+        var postings_map = std.StringHashMap(posting.Posting).init(self.allocator);
+        defer postings_map.deinit();
+
+        try getPostingsForTermsList(&postings_map, document.data.title, document.doc_id, .title);
+        try getPostingsForTermsList(&postings_map, document.data.tags, document.doc_id, .tags);
+        try getPostingsForTermsList(&postings_map, document.data.ingredients, document.doc_id, .ingredients);
+
+        var postings_map_it = postings_map.iterator();
+        while (postings_map_it.next()) |entry| {
+            try self.addPosting(entry.key_ptr.*, entry.value_ptr.*);
+        }
+    }
+
+    fn getPostingsForTermsList(postings_map: *std.StringHashMap(posting.Posting), terms_list: std.ArrayList([]const u8), doc_id: u32, field: posting.Field) !void {
+        for (terms_list.items) |term| {
+            const gop = try postings_map.getOrPut(term);
+
+            if (!gop.found_existing) {
+                gop.key_ptr.* = term;
+                gop.value_ptr.* = posting.Posting.init(doc_id, field);
+            }
+            gop.value_ptr.term_frequency = gop.value_ptr.term_frequency + 1;
+        }
+    }
+
     fn addPosting(self: *ReverseIndex, term: []const u8, item: posting.Posting) !void {
         const gop = try self.index.getOrPut(term);
         if (!gop.found_existing) {
-            // clone the term
             gop.key_ptr.* = try self.allocator.dupe(u8, term);
             gop.value_ptr.* = posting.PostingList.init(self.allocator);
         }
         try gop.value_ptr.append(item);
     }
 
-    pub fn indexDocument(self: *ReverseIndex, document: struct { data: recipeParser.RecipeData }) !void {
-        var postings_map = std.StringHashMap(posting.Posting).init(self.allocator);
-        defer postings_map.deinit();
+    pub fn debugIndex(self: *ReverseIndex) void {
+        var index_it = self.index.iterator();
+        while (index_it.next()) |entry| {
+            const term = entry.key_ptr.*;
+            const postings = entry.value_ptr.items.items;
 
-        try updatePostingTerms(&postings_map, document.data.title, .title);
-        try updatePostingTerms(&postings_map, document.data.tags, .tags);
-        try updatePostingTerms(&postings_map, document.data.ingredients, .ingredients);
-
-        var it = postings_map.iterator();
-        while (it.next()) |entry| {
-            std.debug.print("key: {s}, value: {any}\n", .{ entry.key_ptr.*, entry.value_ptr.* });
-        }
-    }
-
-    fn updatePostingTerms(postings_maps: *std.StringHashMap(posting.Posting), terms_list: std.ArrayList([]const u8), source_field: posting.SourceField) !void {
-        for (terms_list.items) |term| {
-            const gop = try postings_maps.getOrPut(term);
-
-            if (!gop.found_existing) {
-                gop.key_ptr.* = term;
-                gop.value_ptr.* = posting.Posting{ .document_id = 0, .term_frequency = 0, .source_field = source_field };
+            std.debug.print("'{s}' ({d} postings)\n", .{ term, postings.len });
+            for (postings) |item| {
+                std.debug.print("   ─ doc:{d}  freq:{d}  field:{s}\n", .{
+                    item.doc_id,
+                    item.term_frequency,
+                    @tagName(item.field),
+                });
             }
-            gop.value_ptr.term_frequency = gop.value_ptr.term_frequency + 1;
+            std.debug.print("\n", .{});
         }
     }
 };
@@ -63,14 +80,16 @@ test "initial" {
     const allocator = std.testing.allocator;
 
     const source =
-        \\# Scrambled Eggs
+        \\# scrambled eggs
         \\
         \\## tags
-        \\breakfast, easy, eggs
+        \\breakfast, easy, eggs, butter
         \\
         \\## ingredients
         \\- eggs
         \\- butter
+        \\- oil
+        \\- bacon
     ;
 
     var parser = markdown.Parser.init(allocator, source);
@@ -83,7 +102,36 @@ test "initial" {
 
     var ri = ReverseIndex.init(allocator);
     defer ri.deinit();
-    try ri.indexDocument(.{ .data = recipeData });
+    try ri.indexDocument(.{ .doc_id = 0, .data = recipeData });
+    // ri.debugIndex();
+
+    const source2 =
+        \\# pasta carbonara
+        \\
+        \\## tags
+        \\pasta, italian, spachetti, carbonara, butter
+        \\
+        \\## ingredients
+        \\- pasta
+        \\- butter
+        \\- oil
+        \\- guanciale or bacon
+        \\- parmezan
+        \\- eggs
+    ;
+
+    var parser2 = markdown.Parser.init(allocator, source2);
+    defer parser2.deinit();
+    const lines2 = try parser2.parse();
+
+    var recipe_parser2 = recipeParser.RecipeParser.init(allocator);
+    defer recipe_parser2.deinit();
+    const recipe_data2 = try recipe_parser2.parse(lines2);
+
+    // var ri = ReverseIndex.init(allocator);
+    // defer ri.deinit();
+    try ri.indexDocument(.{ .doc_id = 1, .data = recipe_data2 });
+    ri.debugIndex();
 
     // try ri.addPosting("pasta", .{ .document_id = 39, .term_frequency = 2, .source_field = posting.SourceField.title });
     // try ri.addPosting("pasta", .{ .document_id = 2, .term_frequency = 2, .source_field = posting.SourceField.ingredients });
