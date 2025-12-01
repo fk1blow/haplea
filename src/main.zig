@@ -1,6 +1,6 @@
 const std = @import("std");
 const markdown = @import("markdown.zig");
-const recipe = @import("recipe_extractor.zig");
+const recipe = @import("recipe_parser.zig");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -37,10 +37,10 @@ pub fn main() !void {
     std.debug.print("Parsed {d} lines\n", .{lines.len});
 
     // Phase 2: Extract recipe data
-    var extractor = recipe.RecipeExtractor.init(allocator);
-    defer extractor.deinit();
+    var recipe_parser = recipe.RecipeParser.init(allocator);
+    defer recipe_parser.deinit();
 
-    const recipe_data = extractor.extract(lines) catch |err| {
+    const recipe_data = recipe_parser.parse(lines) catch |err| {
         std.debug.print("\nError extracting recipe: {}\n", .{err});
         return err;
     };

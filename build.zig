@@ -34,10 +34,10 @@ pub fn build(b: *std.Build) void {
 
     const run_markdown_tests = b.addRunArtifact(markdown_tests);
 
-    // Tests for recipe extractor module
+    // Tests for recipe parser module
     const recipe_tests = b.addTest(.{
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/recipe_extractor.zig"),
+            .root_source_file = b.path("src/recipe_parser.zig"),
             .target = target,
             .optimize = optimize,
         }),

@@ -72,12 +72,12 @@ pub const RecipeData = struct {
     }
 };
 
-pub const RecipeExtractor = struct {
+pub const RecipeParser = struct {
     allocator: mem.Allocator,
     data: RecipeData,
     state: ExtractionState,
 
-    pub fn init(allocator: mem.Allocator) RecipeExtractor {
+    pub fn init(allocator: mem.Allocator) RecipeParser {
         return .{
             .allocator = allocator,
             .data = RecipeData.init(allocator),
@@ -85,11 +85,11 @@ pub const RecipeExtractor = struct {
         };
     }
 
-    pub fn deinit(self: *RecipeExtractor) void {
+    pub fn deinit(self: *RecipeParser) void {
         self.data.deinit();
     }
 
-    pub fn extract(self: *RecipeExtractor, lines: []const Line) !RecipeData {
+    pub fn parse(self: *RecipeParser, lines: []const Line) !RecipeData {
         for (lines) |line| {
             if (line.type == .Blank or line.type == .Empty) continue;
 
@@ -113,7 +113,7 @@ pub const RecipeExtractor = struct {
         return self.data;
     }
 
-    fn validate(self: *RecipeExtractor) !void {
+    fn validate(self: *RecipeParser) !void {
         if (!self.state.seen_title or self.data.title.items.len == 0) {
             return RecipeError.MissingTitle;
         }
@@ -152,7 +152,7 @@ pub const RecipeExtractor = struct {
         return mem.indexOf(u8, heading_lower, needle_lower) != null;
     }
 
-    fn handleHeading(self: *RecipeExtractor, line: Line) !void {
+    fn handleHeading(self: *RecipeParser, line: Line) !void {
         const heading_text = MarkdownUtils.stripHeading(line.text);
 
         if (line.type.Heading.level == 1) {
@@ -178,32 +178,31 @@ pub const RecipeExtractor = struct {
         }
     }
 
-    fn handleList(self: *RecipeExtractor, line: Line) !void {
+    fn handleList(self: *RecipeParser, line: Line) !void {
         const line_text = MarkdownUtils.stripListMarker(line.text);
         try self.appendToCurrentSection(line_text);
     }
 
-    fn handleParagraph(self: *RecipeExtractor, line: Line) !void {
+    fn handleParagraph(self: *RecipeParser, line: Line) !void {
         var iter = mem.tokenizeAny(u8, line.text, ",");
         while (iter.next()) |token| {
             try self.appendToCurrentSection(token);
         }
     }
 
-    fn appendToCurrentSection(self: *RecipeExtractor, text: []const u8) !void {
+    fn appendToCurrentSection(self: *RecipeParser, text: []const u8) !void {
         const trimmed = mem.trim(u8, text, " \t\r\n");
         if (trimmed.len == 0) return; // Skip empty tokens
 
         switch (self.state.current) {
             .Ingredients => try self.data.ingredients.append(self.allocator, trimmed),
             .Tags => try self.data.tags.append(self.allocator, trimmed),
-            else => {}, // Ignore content outside tracked sections
+            else => {},
         }
     }
 };
 
-// Tests
-test "RecipeExtractor - basic extraction" {
+test "RecipeParser - basic parsing" {
     const allocator = std.testing.allocator;
 
     const source =
@@ -217,13 +216,13 @@ test "RecipeExtractor - basic extraction" {
         \\- butter
     ;
 
-    var parser = markdown.Parser.init(allocator, source);
-    defer parser.deinit();
-    const lines = try parser.parse();
+    var md_parser = markdown.Parser.init(allocator, source);
+    defer md_parser.deinit();
+    const lines = try md_parser.parse();
 
-    var extractor = RecipeExtractor.init(allocator);
-    defer extractor.deinit();
-    const data = try extractor.extract(lines);
+    var recipe_parser = RecipeParser.init(allocator);
+    defer recipe_parser.deinit();
+    const data = try recipe_parser.parse(lines);
 
     try std.testing.expectEqual(@as(usize, 2), data.title.items.len);
     try std.testing.expectEqualStrings("Scrambled", data.title.items[0]);
@@ -236,7 +235,7 @@ test "RecipeExtractor - basic extraction" {
     try std.testing.expectEqualStrings("butter", data.ingredients.items[1]);
 }
 
-test "RecipeExtractor - case insensitive headings" {
+test "RecipeParser - case insensitive headings" {
     const allocator = std.testing.allocator;
 
     const source =
@@ -247,13 +246,13 @@ test "RecipeExtractor - case insensitive headings" {
         \\item
     ;
 
-    var parser = markdown.Parser.init(allocator, source);
-    defer parser.deinit();
-    const lines = try parser.parse();
+    var md_parser = markdown.Parser.init(allocator, source);
+    defer md_parser.deinit();
+    const lines = try md_parser.parse();
 
-    var extractor = RecipeExtractor.init(allocator);
-    defer extractor.deinit();
-    const data = try extractor.extract(lines);
+    var recipe_parser = RecipeParser.init(allocator);
+    defer recipe_parser.deinit();
+    const data = try recipe_parser.parse(lines);
 
     try std.testing.expectEqual(@as(usize, 1), data.title.items.len);
     try std.testing.expectEqualStrings("Recipe", data.title.items[0]);
@@ -261,7 +260,7 @@ test "RecipeExtractor - case insensitive headings" {
     try std.testing.expect(data.ingredients.items.len > 0);
 }
 
-test "RecipeExtractor - exact match prevents substring false positives" {
+test "RecipeParser - exact match prevents substring false positives" {
     const allocator = std.testing.allocator;
 
     const source =
@@ -274,13 +273,13 @@ test "RecipeExtractor - exact match prevents substring false positives" {
         \\real
     ;
 
-    var parser = markdown.Parser.init(allocator, source);
-    defer parser.deinit();
-    const lines = try parser.parse();
+    var md_parser = markdown.Parser.init(allocator, source);
+    defer md_parser.deinit();
+    const lines = try md_parser.parse();
 
-    var extractor = RecipeExtractor.init(allocator);
-    defer extractor.deinit();
-    const data = try extractor.extract(lines);
+    var recipe_parser = RecipeParser.init(allocator);
+    defer recipe_parser.deinit();
+    const data = try recipe_parser.parse(lines);
 
     try std.testing.expectEqual(@as(usize, 1), data.title.items.len);
     try std.testing.expectEqualStrings("Recipe", data.title.items[0]);
@@ -290,7 +289,7 @@ test "RecipeExtractor - exact match prevents substring false positives" {
     try std.testing.expectEqualStrings("real", data.tags.items[1]);
 }
 
-test "RecipeExtractor - mixed list and paragraph format" {
+test "RecipeParser - mixed list and paragraph format" {
     const allocator = std.testing.allocator;
 
     const source =
@@ -304,13 +303,13 @@ test "RecipeExtractor - mixed list and paragraph format" {
         \\- item3
     ;
 
-    var parser = markdown.Parser.init(allocator, source);
-    defer parser.deinit();
-    const lines = try parser.parse();
+    var md_parser = markdown.Parser.init(allocator, source);
+    defer md_parser.deinit();
+    const lines = try md_parser.parse();
 
-    var extractor = RecipeExtractor.init(allocator);
-    defer extractor.deinit();
-    const data = try extractor.extract(lines);
+    var recipe_parser = RecipeParser.init(allocator);
+    defer recipe_parser.deinit();
+    const data = try recipe_parser.parse(lines);
 
     try std.testing.expectEqual(@as(usize, 1), data.title.items.len);
     try std.testing.expectEqualStrings("Recipe", data.title.items[0]);
@@ -318,7 +317,7 @@ test "RecipeExtractor - mixed list and paragraph format" {
     try std.testing.expectEqual(@as(usize, 3), data.ingredients.items.len);
 }
 
-test "RecipeExtractor - missing title error" {
+test "RecipeParser - missing title error" {
     const allocator = std.testing.allocator;
 
     const source =
@@ -328,34 +327,34 @@ test "RecipeExtractor - missing title error" {
         \\item
     ;
 
-    var parser = markdown.Parser.init(allocator, source);
-    defer parser.deinit();
-    const lines = try parser.parse();
+    var md_parser = markdown.Parser.init(allocator, source);
+    defer md_parser.deinit();
+    const lines = try md_parser.parse();
 
-    var extractor = RecipeExtractor.init(allocator);
-    defer extractor.deinit();
+    var recipe_parser = RecipeParser.init(allocator);
+    defer recipe_parser.deinit();
 
-    const result = extractor.extract(lines);
+    const result = recipe_parser.parse(lines);
     try std.testing.expectError(RecipeError.MissingTitle, result);
 }
 
-test "RecipeExtractor - missing sections error" {
+test "RecipeParser - missing sections error" {
     const allocator = std.testing.allocator;
 
     const source = "# Recipe Title\n";
 
-    var parser = markdown.Parser.init(allocator, source);
-    defer parser.deinit();
-    const lines = try parser.parse();
+    var md_parser = markdown.Parser.init(allocator, source);
+    defer md_parser.deinit();
+    const lines = try md_parser.parse();
 
-    var extractor = RecipeExtractor.init(allocator);
-    defer extractor.deinit();
+    var recipe_parser = RecipeParser.init(allocator);
+    defer recipe_parser.deinit();
 
-    const result = extractor.extract(lines);
+    const result = recipe_parser.parse(lines);
     try std.testing.expectError(RecipeError.MissingTags, result);
 }
 
-test "RecipeExtractor - empty sections error" {
+test "RecipeParser - empty sections error" {
     const allocator = std.testing.allocator;
 
     const source =
@@ -364,18 +363,18 @@ test "RecipeExtractor - empty sections error" {
         \\## ingredients
     ;
 
-    var parser = markdown.Parser.init(allocator, source);
-    defer parser.deinit();
-    const lines = try parser.parse();
+    var md_parser = markdown.Parser.init(allocator, source);
+    defer md_parser.deinit();
+    const lines = try md_parser.parse();
 
-    var extractor = RecipeExtractor.init(allocator);
-    defer extractor.deinit();
+    var recipe_parser = RecipeParser.init(allocator);
+    defer recipe_parser.deinit();
 
-    const result = extractor.extract(lines);
+    const result = recipe_parser.parse(lines);
     try std.testing.expectError(RecipeError.EmptyTags, result);
 }
 
-test "RecipeExtractor - multi-word title" {
+test "RecipeParser - multi-word title" {
     const allocator = std.testing.allocator;
 
     const source =
@@ -386,13 +385,13 @@ test "RecipeExtractor - multi-word title" {
         \\eggs
     ;
 
-    var parser = markdown.Parser.init(allocator, source);
-    defer parser.deinit();
-    const lines = try parser.parse();
+    var md_parser = markdown.Parser.init(allocator, source);
+    defer md_parser.deinit();
+    const lines = try md_parser.parse();
 
-    var extractor = RecipeExtractor.init(allocator);
-    defer extractor.deinit();
-    const data = try extractor.extract(lines);
+    var recipe_parser = RecipeParser.init(allocator);
+    defer recipe_parser.deinit();
+    const data = try recipe_parser.parse(lines);
 
     try std.testing.expectEqual(@as(usize, 4), data.title.items.len);
     try std.testing.expectEqualStrings("Easy", data.title.items[0]);
@@ -401,7 +400,7 @@ test "RecipeExtractor - multi-word title" {
     try std.testing.expectEqualStrings("Recipe", data.title.items[3]);
 }
 
-test "RecipeExtractor - title with multiple spaces" {
+test "RecipeParser - title with multiple spaces" {
     const allocator = std.testing.allocator;
 
     const source =
@@ -412,13 +411,13 @@ test "RecipeExtractor - title with multiple spaces" {
         \\item
     ;
 
-    var parser = markdown.Parser.init(allocator, source);
-    defer parser.deinit();
-    const lines = try parser.parse();
+    var md_parser = markdown.Parser.init(allocator, source);
+    defer md_parser.deinit();
+    const lines = try md_parser.parse();
 
-    var extractor = RecipeExtractor.init(allocator);
-    defer extractor.deinit();
-    const data = try extractor.extract(lines);
+    var recipe_parser = RecipeParser.init(allocator);
+    defer recipe_parser.deinit();
+    const data = try recipe_parser.parse(lines);
 
     // tokenizeScalar skips empty tokens from multiple spaces
     try std.testing.expectEqual(@as(usize, 2), data.title.items.len);
@@ -426,7 +425,7 @@ test "RecipeExtractor - title with multiple spaces" {
     try std.testing.expectEqualStrings("World", data.title.items[1]);
 }
 
-test "RecipeExtractor - title with special characters" {
+test "RecipeParser - title with special characters" {
     const allocator = std.testing.allocator;
 
     const source =
@@ -437,13 +436,13 @@ test "RecipeExtractor - title with special characters" {
         \\apples
     ;
 
-    var parser = markdown.Parser.init(allocator, source);
-    defer parser.deinit();
-    const lines = try parser.parse();
+    var md_parser = markdown.Parser.init(allocator, source);
+    defer md_parser.deinit();
+    const lines = try md_parser.parse();
 
-    var extractor = RecipeExtractor.init(allocator);
-    defer extractor.deinit();
-    const data = try extractor.extract(lines);
+    var recipe_parser = RecipeParser.init(allocator);
+    defer recipe_parser.deinit();
+    const data = try recipe_parser.parse(lines);
 
     try std.testing.expectEqual(@as(usize, 3), data.title.items.len);
     try std.testing.expectEqualStrings("Grandma's", data.title.items[0]);

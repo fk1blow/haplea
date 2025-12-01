@@ -74,7 +74,7 @@ zig build test --summary all
 
 **Current test coverage:**
 - `src/markdown.zig` - 6 tests for generic markdown parsing
-- `src/recipe_extractor.zig` - 7 tests for recipe extraction and error handling
+- `src/recipe_parser.zig` - 10 tests for recipe parsing and error handling
 
 ### Frontend Development
 
