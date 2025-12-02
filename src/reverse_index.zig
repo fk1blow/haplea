@@ -14,6 +14,7 @@ pub const ReverseIndex = struct {
     pub fn deinit(self: *ReverseIndex) void {
         var it = self.index.iterator();
         while (it.next()) |entry| {
+            // we're cloning(and allocating) the word used as the map's key
             // deallocate the key of the hash
             self.allocator.free(entry.key_ptr.*);
             // deallocate the posting list
@@ -109,7 +110,6 @@ test "initial" {
     var ri = ReverseIndex.init(allocator);
     defer ri.deinit();
     try ri.indexDocument(.{ .doc_id = 0, .data = recipeData });
-    // ri.debugIndex();
 
     const source2 =
         \\# Pasta Carbonara
