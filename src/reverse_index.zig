@@ -65,7 +65,7 @@ pub const ReverseIndex = struct {
             const term = entry.key_ptr.*;
             const postings = entry.value_ptr.items.items;
 
-            std.debug.print("'{s}' ({d} postings)\n", .{ term, postings.len });
+            std.debug.print("# {s} ({d} postings)\n", .{ term, postings.len });
             for (postings) |item| {
                 std.debug.print("   ─ doc:{d}  freq:{d}  fields:", .{
                     item.doc_id,
@@ -86,7 +86,7 @@ test "initial" {
     const allocator = std.testing.allocator;
 
     const source =
-        \\# scrambled eggs
+        \\# Scrambled Eggs
         \\
         \\## tags
         \\breakfast, easy, eggs, butter
@@ -112,7 +112,7 @@ test "initial" {
     // ri.debugIndex();
 
     const source2 =
-        \\# pasta carbonara
+        \\# Pasta Carbonara
         \\
         \\## tags
         \\pasta, italian, spachetti, carbonara, butter
@@ -130,21 +130,8 @@ test "initial" {
     defer parser2.deinit();
     const lines2 = try parser2.parse();
 
-    // var recipe_parser2 = recipeParser.RecipeParser.init(allocator);
-    // defer recipe_parser2.deinit();
     const recipe_data2 = try recipe_parser.parse(lines2);
 
-    // var ri = ReverseIndex.init(allocator);
-    // defer ri.deinit();
     try ri.indexDocument(.{ .doc_id = 1, .data = recipe_data2 });
     ri.debugIndex();
-
-    // try ri.addPosting("pasta", .{ .document_id = 39, .term_frequency = 2, .source_field = posting.SourceField.title });
-    // try ri.addPosting("pasta", .{ .document_id = 2, .term_frequency = 2, .source_field = posting.SourceField.ingredients });
-
-    // if (ri.index.get("pasta")) |postings| {
-    //     for (postings.items.items) |item| {
-    //         std.debug.print("found: {any}, weight: {d} \n", .{ item, item.source_field.getWeight() });
-    //     }
-    // }
 }
