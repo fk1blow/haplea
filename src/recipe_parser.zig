@@ -66,6 +66,15 @@ pub const RecipeData = struct {
     }
 
     pub fn deinit(self: *RecipeData) void {
+        for (self.title.items) |item| {
+            self.allocator.free(item);
+        }
+        for (self.tags.items) |item| {
+            self.allocator.free(item);
+        }
+        for (self.ingredients.items) |item| {
+            self.allocator.free(item);
+        }
         self.title.deinit(self.allocator);
         self.tags.deinit(self.allocator);
         self.ingredients.deinit(self.allocator);
@@ -156,12 +165,11 @@ pub const RecipeParser = struct {
         const heading_text = MarkdownUtils.stripHeading(line.text);
 
         if (line.type.Heading.level == 1) {
-            // Split title into words by space
+            self.state.transition(.Title);
             var iter = mem.tokenizeScalar(u8, heading_text, ' ');
             while (iter.next()) |word| {
-                try self.data.title.append(self.allocator, word);
+                try self.appendToCurrentSection(word);
             }
-            self.state.transition(.Title);
         } else if (line.type.Heading.level >= 2) {
             // Try exact match first, then substring
             if (try matchesSectionExact(heading_text, "tags", self.allocator)) {
@@ -179,31 +187,33 @@ pub const RecipeParser = struct {
     }
 
     fn handleList(self: *RecipeParser, line: Line) !void {
-        const line_text = MarkdownUtils.stripListMarker(line.text);
-        // try self.appendToCurrentSection(line_text);
-        var iter = mem.tokenizeAny(u8, line_text, ",;. ");
-        while (iter.next()) |token| {
-            if (token.len == 0) continue;
-            try self.appendToCurrentSection(token);
+        const line_stripped = MarkdownUtils.stripListMarker(line.text);
+        var iter = mem.tokenizeAny(u8, line_stripped, ",;. ");
+        while (iter.next()) |word| {
+            if (word.len == 0) continue;
+            try self.appendToCurrentSection(word);
         }
     }
 
     fn handleParagraph(self: *RecipeParser, line: Line) !void {
         var iter = mem.tokenizeAny(u8, line.text, ",;. ");
-        while (iter.next()) |token| {
-            if (token.len == 0) continue;
-            try self.appendToCurrentSection(token);
+        while (iter.next()) |word| {
+            if (word.len == 0) continue;
+            try self.appendToCurrentSection(word);
         }
     }
 
-    fn appendToCurrentSection(self: *RecipeParser, text: []const u8) !void {
-        const trimmed = mem.trim(u8, text, " \t\r\n,.;");
+    fn appendToCurrentSection(self: *RecipeParser, word: []const u8) !void {
+        const trimmed = mem.trim(u8, word, " \t\r\n,.;");
         if (trimmed.len == 0) return; // Skip empty tokens
 
+        const normalized = try std.ascii.allocLowerString(self.allocator, trimmed);
+
         switch (self.state.current) {
-            .Ingredients => try self.data.ingredients.append(self.allocator, trimmed),
-            .Tags => try self.data.tags.append(self.allocator, trimmed),
-            else => {},
+            .Title => try self.data.title.append(self.allocator, normalized),
+            .Ingredients => try self.data.ingredients.append(self.allocator, normalized),
+            .Tags => try self.data.tags.append(self.allocator, normalized),
+            else => self.allocator.free(normalized),
         }
     }
 };
@@ -215,7 +225,7 @@ test "RecipeParser - basic parsing" {
         \\# Scrambled Eggs
         \\
         \\## tags
-        \\breakfast, easy
+        \\breakfast, Easy
         \\
         \\## ingredients
         \\- eggs
@@ -232,8 +242,8 @@ test "RecipeParser - basic parsing" {
     const data = try recipe_parser.parse(lines);
 
     try std.testing.expectEqual(@as(usize, 2), data.title.items.len);
-    try std.testing.expectEqualStrings("Scrambled", data.title.items[0]);
-    try std.testing.expectEqualStrings("Eggs", data.title.items[1]);
+    try std.testing.expectEqualStrings("scrambled", data.title.items[0]);
+    try std.testing.expectEqualStrings("eggs", data.title.items[1]);
     try std.testing.expectEqual(@as(usize, 2), data.tags.items.len);
     try std.testing.expectEqualStrings("breakfast", data.tags.items[0]);
     try std.testing.expectEqualStrings("easy", data.tags.items[1]);
@@ -265,7 +275,7 @@ test "RecipeParser - case insensitive headings" {
     const data = try recipe_parser.parse(lines);
 
     try std.testing.expectEqual(@as(usize, 1), data.title.items.len);
-    try std.testing.expectEqualStrings("Recipe", data.title.items[0]);
+    try std.testing.expectEqualStrings("recipe", data.title.items[0]);
     try std.testing.expect(data.tags.items.len > 0);
     try std.testing.expect(data.ingredients.items.len > 0);
 }
@@ -292,7 +302,7 @@ test "RecipeParser - exact match prevents substring false positives" {
     const data = try recipe_parser.parse(lines);
 
     try std.testing.expectEqual(@as(usize, 1), data.title.items.len);
-    try std.testing.expectEqualStrings("Recipe", data.title.items[0]);
+    try std.testing.expectEqualStrings("recipe", data.title.items[0]);
     // "hashtags" should match due to substring, but "tags" should override with exact match
     try std.testing.expectEqual(@as(usize, 2), data.tags.items.len);
     try std.testing.expectEqualStrings("social", data.tags.items[0]);
@@ -322,7 +332,7 @@ test "RecipeParser - mixed list and paragraph format" {
     const data = try recipe_parser.parse(lines);
 
     try std.testing.expectEqual(@as(usize, 1), data.title.items.len);
-    try std.testing.expectEqualStrings("Recipe", data.title.items[0]);
+    try std.testing.expectEqualStrings("recipe", data.title.items[0]);
     try std.testing.expectEqual(@as(usize, 4), data.tags.items.len);
     try std.testing.expectEqual(@as(usize, 3), data.ingredients.items.len);
 }
@@ -404,10 +414,10 @@ test "RecipeParser - multi-word title" {
     const data = try recipe_parser.parse(lines);
 
     try std.testing.expectEqual(@as(usize, 4), data.title.items.len);
-    try std.testing.expectEqualStrings("Easy", data.title.items[0]);
-    try std.testing.expectEqualStrings("Scrambled", data.title.items[1]);
-    try std.testing.expectEqualStrings("Eggs", data.title.items[2]);
-    try std.testing.expectEqualStrings("Recipe", data.title.items[3]);
+    try std.testing.expectEqualStrings("easy", data.title.items[0]);
+    try std.testing.expectEqualStrings("scrambled", data.title.items[1]);
+    try std.testing.expectEqualStrings("eggs", data.title.items[2]);
+    try std.testing.expectEqualStrings("recipe", data.title.items[3]);
 }
 
 test "RecipeParser - title with multiple spaces" {
@@ -431,8 +441,8 @@ test "RecipeParser - title with multiple spaces" {
 
     // tokenizeScalar skips empty tokens from multiple spaces
     try std.testing.expectEqual(@as(usize, 2), data.title.items.len);
-    try std.testing.expectEqualStrings("Hello", data.title.items[0]);
-    try std.testing.expectEqualStrings("World", data.title.items[1]);
+    try std.testing.expectEqualStrings("hello", data.title.items[0]);
+    try std.testing.expectEqualStrings("world", data.title.items[1]);
 }
 
 test "RecipeParser - title with special characters" {
@@ -455,9 +465,9 @@ test "RecipeParser - title with special characters" {
     const data = try recipe_parser.parse(lines);
 
     try std.testing.expectEqual(@as(usize, 3), data.title.items.len);
-    try std.testing.expectEqualStrings("Grandma's", data.title.items[0]);
-    try std.testing.expectEqualStrings("Apple", data.title.items[1]);
-    try std.testing.expectEqualStrings("Pie", data.title.items[2]);
+    try std.testing.expectEqualStrings("grandma's", data.title.items[0]);
+    try std.testing.expectEqualStrings("apple", data.title.items[1]);
+    try std.testing.expectEqualStrings("pie", data.title.items[2]);
 }
 
 test "RecipeParser - lists and paragraphs both split into words" {
