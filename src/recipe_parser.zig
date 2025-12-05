@@ -4,7 +4,7 @@ const markdown = @import("markdown/parser.zig");
 const Line = markdown.Line;
 const LineType = markdown.LineType;
 
-pub const RecipeError = error{
+pub const ValidationError = error{
     MissingTitle,
     MissingTags,
     MissingIngredients,
@@ -124,19 +124,19 @@ pub const RecipeParser = struct {
 
     fn validate(self: *RecipeParser) !void {
         if (!self.state.seen_title or self.data.title.items.len == 0) {
-            return RecipeError.MissingTitle;
+            return ValidationError.MissingTitle;
         }
         if (!self.state.seen_tags) {
-            return RecipeError.MissingTags;
+            return ValidationError.MissingTags;
         }
         if (!self.state.seen_ingredients) {
-            return RecipeError.MissingIngredients;
+            return ValidationError.MissingIngredients;
         }
         if (self.data.tags.items.len == 0) {
-            return RecipeError.EmptyTags;
+            return ValidationError.EmptyTags;
         }
         if (self.data.ingredients.items.len == 0) {
-            return RecipeError.EmptyIngredients;
+            return ValidationError.EmptyIngredients;
         }
     }
 
@@ -355,7 +355,7 @@ test "RecipeParser - missing title error" {
     defer recipe_parser.deinit();
 
     const result = recipe_parser.parse(lines);
-    try std.testing.expectError(RecipeError.MissingTitle, result);
+    try std.testing.expectError(ValidationError.MissingTitle, result);
 }
 
 test "RecipeParser - missing sections error" {
@@ -371,7 +371,7 @@ test "RecipeParser - missing sections error" {
     defer recipe_parser.deinit();
 
     const result = recipe_parser.parse(lines);
-    try std.testing.expectError(RecipeError.MissingTags, result);
+    try std.testing.expectError(ValidationError.MissingTags, result);
 }
 
 test "RecipeParser - empty sections error" {
@@ -391,7 +391,7 @@ test "RecipeParser - empty sections error" {
     defer recipe_parser.deinit();
 
     const result = recipe_parser.parse(lines);
-    try std.testing.expectError(RecipeError.EmptyTags, result);
+    try std.testing.expectError(ValidationError.EmptyTags, result);
 }
 
 test "RecipeParser - multi-word title" {
