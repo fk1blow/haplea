@@ -5,22 +5,22 @@ const recipeParser = @import("recipe_parser.zig");
 
 pub const ReverseIndex = struct {
     allocator: std.mem.Allocator,
-    index: std.StringHashMap(posting.PostingList),
+    dictionary: std.StringHashMap(posting.PostingList),
 
     pub fn init(allocator: std.mem.Allocator) ReverseIndex {
-        return ReverseIndex{ .allocator = allocator, .index = std.StringHashMap(posting.PostingList).init(allocator) };
+        return ReverseIndex{ .allocator = allocator, .dictionary = std.StringHashMap(posting.PostingList).init(allocator) };
     }
 
     pub fn deinit(self: *ReverseIndex) void {
-        var it = self.index.iterator();
+        var it = self.dictionary.iterator();
         while (it.next()) |entry| {
-            // we're cloning(and allocating) the word used as the map's key
+            // the key's backing word was cloned
             // deallocate the key of the hash
             self.allocator.free(entry.key_ptr.*);
             // deallocate the posting list
             entry.value_ptr.deinit();
         }
-        self.index.deinit();
+        self.dictionary.deinit();
     }
 
     pub fn indexDocument(self: *ReverseIndex, document: struct { doc_id: u32, data: recipeParser.RecipeData }) !void {
@@ -52,7 +52,7 @@ pub const ReverseIndex = struct {
     }
 
     fn updateIndex(self: *ReverseIndex, key: []const u8, posting_item: posting.Posting) !void {
-        const gop = try self.index.getOrPut(key);
+        const gop = try self.dictionary.getOrPut(key);
         if (!gop.found_existing) {
             gop.key_ptr.* = try self.allocator.dupe(u8, key);
             gop.value_ptr.* = posting.PostingList.init(self.allocator);
@@ -61,7 +61,7 @@ pub const ReverseIndex = struct {
     }
 
     pub fn debugIndex(self: *ReverseIndex) void {
-        var index_it = self.index.iterator();
+        var index_it = self.dictionary.iterator();
         while (index_it.next()) |entry| {
             const term = entry.key_ptr.*;
             const postings = entry.value_ptr.items.items;
@@ -105,11 +105,11 @@ test "initial" {
 
     var recipe_parser = recipeParser.RecipeParser.init(allocator);
     defer recipe_parser.deinit();
-    const recipeData = try recipe_parser.parse(lines);
+    const recipe_data = try recipe_parser.parse(lines);
 
     var ri = ReverseIndex.init(allocator);
     defer ri.deinit();
-    try ri.indexDocument(.{ .doc_id = 0, .data = recipeData });
+    try ri.indexDocument(.{ .doc_id = 0, .data = recipe_data });
 
     const source2 =
         \\# Pasta Carbonara
@@ -130,7 +130,9 @@ test "initial" {
     defer parser2.deinit();
     const lines2 = try parser2.parse();
 
-    const recipe_data2 = try recipe_parser.parse(lines2);
+    var recipe_parser2 = recipeParser.RecipeParser.init(allocator);
+    defer recipe_parser2.deinit();
+    const recipe_data2 = try recipe_parser2.parse(lines2);
 
     try ri.indexDocument(.{ .doc_id = 1, .data = recipe_data2 });
     ri.debugIndex();

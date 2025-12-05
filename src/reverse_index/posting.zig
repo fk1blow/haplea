@@ -26,19 +26,19 @@ pub const Posting = struct {
     }
 };
 
-pub const PostingList = struct {
+pub const Postings = struct {
     allocator: std.mem.Allocator,
     items: std.ArrayList(Posting),
 
-    pub fn init(allocator: std.mem.Allocator) PostingList {
+    pub fn init(allocator: std.mem.Allocator) Postings {
         return .{ .allocator = allocator, .items = std.ArrayList(Posting){} };
     }
 
-    pub fn deinit(self: *PostingList) void {
+    pub fn deinit(self: *Postings) void {
         self.items.deinit(self.allocator);
     }
 
-    pub fn append(self: *PostingList, item: Posting) !void {
+    pub fn append(self: *Postings, item: Posting) !void {
         try self.items.append(self.allocator, item);
     }
 };
