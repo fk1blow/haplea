@@ -254,16 +254,16 @@ test "IDF ranking dataset" {
     try std.testing.expectEqual(@as(usize, 1), truffle_postings.docs.items.len);
 
     // Verify document frequencies using ranking module
-    try std.testing.expectEqual(@as(usize, 5), ranking.getDocumentFrequency(&salt_postings));
-    try std.testing.expectEqual(@as(usize, 3), ranking.getDocumentFrequency(&chicken_postings));
-    try std.testing.expectEqual(@as(usize, 2), ranking.getDocumentFrequency(&pasta_postings));
-    try std.testing.expectEqual(@as(usize, 1), ranking.getDocumentFrequency(&truffle_postings));
+    try std.testing.expectEqual(@as(usize, 5), ranking.df(&salt_postings));
+    try std.testing.expectEqual(@as(usize, 3), ranking.df(&chicken_postings));
+    try std.testing.expectEqual(@as(usize, 2), ranking.df(&pasta_postings));
+    try std.testing.expectEqual(@as(usize, 1), ranking.df(&truffle_postings));
 
     // Verify IDF values using ranking module
-    const salt_idf = ranking.getInverseDocumentFrequency(&salt_postings, total_docs);
-    const chicken_idf = ranking.getInverseDocumentFrequency(&chicken_postings, total_docs);
-    const pasta_idf = ranking.getInverseDocumentFrequency(&pasta_postings, total_docs);
-    const truffle_idf = ranking.getInverseDocumentFrequency(&truffle_postings, total_docs);
+    const salt_idf = ranking.idf(&salt_postings, total_docs);
+    const chicken_idf = ranking.idf(&chicken_postings, total_docs);
+    const pasta_idf = ranking.idf(&pasta_postings, total_docs);
+    const truffle_idf = ranking.idf(&truffle_postings, total_docs);
 
     // IDF should increase as terms become rarer
     try std.testing.expect(salt_idf < chicken_idf);
@@ -278,8 +278,8 @@ test "IDF ranking dataset" {
 
     std.debug.print("\n=== IDF Ranking Test Results ===\n", .{});
     std.debug.print("Total documents: {d}\n", .{total_docs});
-    std.debug.print("salt:    df={d}, IDF={d:.3}\n", .{ ranking.getDocumentFrequency(&salt_postings), salt_idf });
-    std.debug.print("chicken: df={d}, IDF={d:.3}\n", .{ ranking.getDocumentFrequency(&chicken_postings), chicken_idf });
-    std.debug.print("pasta:   df={d}, IDF={d:.3}\n", .{ ranking.getDocumentFrequency(&pasta_postings), pasta_idf });
-    std.debug.print("truffle: df={d}, IDF={d:.3}\n", .{ ranking.getDocumentFrequency(&truffle_postings), truffle_idf });
+    std.debug.print("salt:    df={d}, IDF={d:.3}\n", .{ ranking.df(&salt_postings), salt_idf });
+    std.debug.print("chicken: df={d}, IDF={d:.3}\n", .{ ranking.df(&chicken_postings), chicken_idf });
+    std.debug.print("pasta:   df={d}, IDF={d:.3}\n", .{ ranking.df(&pasta_postings), pasta_idf });
+    std.debug.print("truffle: df={d}, IDF={d:.3}\n", .{ ranking.df(&truffle_postings), truffle_idf });
 }
