@@ -45,7 +45,19 @@ pub fn build(b: *std.Build) void {
 
     const run_recipe_tests = b.addRunArtifact(recipe_tests);
 
+    // Tests for reverse index module
+    const reverse_index_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/reverse_index.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+
+    const run_reverse_index_tests = b.addRunArtifact(reverse_index_tests);
+
     const test_step = b.step("test", "Run tests");
     test_step.dependOn(&run_markdown_tests.step);
     test_step.dependOn(&run_recipe_tests.step);
+    test_step.dependOn(&run_reverse_index_tests.step);
 }
