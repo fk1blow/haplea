@@ -7,6 +7,7 @@ const recipeParser = @import("recipe_parser.zig");
 pub const ReverseIndex = struct {
     allocator: std.mem.Allocator,
     dictionary: std.StringHashMap(posting.Postings),
+    doc_count: u32 = 0,
 
     pub fn init(allocator: std.mem.Allocator) ReverseIndex {
         return ReverseIndex{ .allocator = allocator, .dictionary = std.StringHashMap(posting.Postings).init(allocator) };
@@ -36,6 +37,8 @@ pub const ReverseIndex = struct {
         while (postings_map_it.next()) |entry| {
             try self.updateIndex(entry.key_ptr.*, entry.value_ptr.*);
         }
+
+        self.doc_count += 1;
     }
 
     fn updateDocumentPostings(postings_map: *std.StringHashMap(posting.Posting), terms_list: std.ArrayList([]const u8), doc_id: u32, field: posting.Field) !void {
@@ -234,8 +237,8 @@ test "IDF ranking dataset" {
         try ri.indexDocument(.{ .doc_id = @intCast(i), .data = recipe_data });
     }
 
-    // Verify document frequencies for IDF calculation
-    const total_docs: u32 = 5;
+    // Verify doc_count is tracked correctly
+    try std.testing.expectEqual(@as(u32, 5), ri.doc_count);
 
     // "salt" should be in all 5 documents
     const salt_postings = ri.dictionary.get("salt").?;
@@ -260,10 +263,10 @@ test "IDF ranking dataset" {
     try std.testing.expectEqual(@as(usize, 1), ranking.df(&truffle_postings));
 
     // Verify IDF values using ranking module
-    const salt_idf = ranking.idf(&salt_postings, total_docs);
-    const chicken_idf = ranking.idf(&chicken_postings, total_docs);
-    const pasta_idf = ranking.idf(&pasta_postings, total_docs);
-    const truffle_idf = ranking.idf(&truffle_postings, total_docs);
+    const salt_idf = ranking.idf(&salt_postings, ri.doc_count);
+    const chicken_idf = ranking.idf(&chicken_postings, ri.doc_count);
+    const pasta_idf = ranking.idf(&pasta_postings, ri.doc_count);
+    const truffle_idf = ranking.idf(&truffle_postings, ri.doc_count);
 
     // IDF should increase as terms become rarer
     try std.testing.expect(salt_idf < chicken_idf);
@@ -277,7 +280,7 @@ test "IDF ranking dataset" {
     try std.testing.expectApproxEqAbs(@as(f64, 1.609), truffle_idf, 0.01);
 
     std.debug.print("\n=== IDF Ranking Test Results ===\n", .{});
-    std.debug.print("Total documents: {d}\n", .{total_docs});
+    std.debug.print("Total documents: {d}\n", .{ri.doc_count});
     std.debug.print("salt:    df={d}, IDF={d:.3}\n", .{ ranking.df(&salt_postings), salt_idf });
     std.debug.print("chicken: df={d}, IDF={d:.3}\n", .{ ranking.df(&chicken_postings), chicken_idf });
     std.debug.print("pasta:   df={d}, IDF={d:.3}\n", .{ ranking.df(&pasta_postings), pasta_idf });
