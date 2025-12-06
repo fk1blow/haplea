@@ -4,13 +4,22 @@ const ranking = @import("reverse_index/ranking.zig");
 const markdown = @import("markdown/parser.zig");
 const recipeParser = @import("recipe_parser.zig");
 
+const Allocator = std.mem.Allocator;
+const StringHashMap = std.StringHashMap;
+const ArrayList = std.ArrayList;
+const testing = std.testing;
+const debug = std.debug;
+
 pub const ReverseIndex = struct {
-    allocator: std.mem.Allocator,
-    dictionary: std.StringHashMap(posting.Postings),
+    allocator: Allocator,
+    dictionary: StringHashMap(posting.Postings),
     doc_count: u32 = 0,
 
-    pub fn init(allocator: std.mem.Allocator) ReverseIndex {
-        return ReverseIndex{ .allocator = allocator, .dictionary = std.StringHashMap(posting.Postings).init(allocator) };
+    pub fn init(allocator: Allocator) ReverseIndex {
+        return ReverseIndex{
+            .allocator = allocator,
+            .dictionary = StringHashMap(posting.Postings).init(allocator),
+        };
     }
 
     pub fn deinit(self: *ReverseIndex) void {
@@ -25,8 +34,11 @@ pub const ReverseIndex = struct {
         self.dictionary.deinit();
     }
 
-    pub fn indexDocument(self: *ReverseIndex, document: struct { doc_id: u32, data: recipeParser.RecipeData }) !void {
-        var postings_map = std.StringHashMap(posting.Posting).init(self.allocator);
+    pub fn indexDocument(
+        self: *ReverseIndex,
+        document: struct { doc_id: u32, data: recipeParser.RecipeData },
+    ) !void {
+        var postings_map = StringHashMap(posting.Posting).init(self.allocator);
         defer postings_map.deinit();
 
         try updateDocumentPostings(&postings_map, document.data.title, document.doc_id, .title);
@@ -41,7 +53,12 @@ pub const ReverseIndex = struct {
         self.doc_count += 1;
     }
 
-    fn updateDocumentPostings(postings_map: *std.StringHashMap(posting.Posting), terms_list: std.ArrayList([]const u8), doc_id: u32, field: posting.Field) !void {
+    fn updateDocumentPostings(
+        postings_map: *StringHashMap(posting.Posting),
+        terms_list: ArrayList([]const u8),
+        doc_id: u32,
+        field: posting.Field,
+    ) !void {
         for (terms_list.items) |term| {
             const gop = try postings_map.getOrPut(term);
 
@@ -70,25 +87,25 @@ pub const ReverseIndex = struct {
             const term = entry.key_ptr.*;
             const postings = entry.value_ptr.docs.items;
 
-            std.debug.print("# {s} ({d} postings)\n", .{ term, postings.len });
+            debug.print("# {s} ({d} postings)\n", .{ term, postings.len });
             for (postings) |item| {
-                std.debug.print("   ─ doc:{d}  freq:{d}  fields:", .{
+                debug.print("   ─ doc:{d}  freq:{d}  fields:", .{
                     item.doc_id,
                     item.term_frequency,
                 });
                 var iter = item.fields.iterator();
                 while (iter.next()) |f| {
-                    std.debug.print(" {s}", .{@tagName(f)});
+                    debug.print(" {s}", .{@tagName(f)});
                 }
-                std.debug.print("\n", .{});
+                debug.print("\n", .{});
             }
-            std.debug.print("\n", .{});
+            debug.print("\n", .{});
         }
     }
 };
 
-test "initial" {
-    const allocator = std.testing.allocator;
+test "populate the index and debug it" {
+    const allocator = testing.allocator;
 
     const source =
         \\# Scrambled Eggs
@@ -142,14 +159,15 @@ test "initial" {
     ri.debugIndex();
 }
 
-// Test dataset for IDF ranking:
-// - 5 recipes total (N=5)
-// - "salt" appears in all 5 recipes → IDF = log(5/5) = 0 (very common, low discriminative value)
-// - "chicken" appears in 3 recipes → IDF = log(5/3) ≈ 0.51
-// - "pasta" appears in 2 recipes → IDF = log(5/2) ≈ 0.92
-// - "truffle" appears in 1 recipe → IDF = log(5/1) ≈ 1.61 (rare, high discriminative value)
 test "IDF ranking dataset" {
-    const allocator = std.testing.allocator;
+    // Test dataset for IDF ranking:
+    // - 5 recipes total (N=5)
+    // - "salt" appears in all 5 recipes → IDF = log(5/5) = 0 (very common, low discriminative value)
+    // - "chicken" appears in 3 recipes → IDF = log(5/3) ≈ 0.51
+    // - "pasta" appears in 2 recipes → IDF = log(5/2) ≈ 0.92
+    // - "truffle" appears in 1 recipe → IDF = log(5/1) ≈ 1.61 (rare, high discriminative value)
+
+    const allocator = testing.allocator;
 
     // Recipe 1: Chicken Salad (contains: chicken, salt, lettuce, olive oil)
     const recipe1 =
@@ -238,29 +256,29 @@ test "IDF ranking dataset" {
     }
 
     // Verify doc_count is tracked correctly
-    try std.testing.expectEqual(@as(u32, 5), ri.doc_count);
+    try testing.expectEqual(@as(u32, 5), ri.doc_count);
 
     // "salt" should be in all 5 documents
     const salt_postings = ri.dictionary.get("salt").?;
-    try std.testing.expectEqual(@as(usize, 5), salt_postings.docs.items.len);
+    try testing.expectEqual(@as(usize, 5), salt_postings.docs.items.len);
 
     // "chicken" should be in 3 documents (recipes 1, 2, 4)
     const chicken_postings = ri.dictionary.get("chicken").?;
-    try std.testing.expectEqual(@as(usize, 3), chicken_postings.docs.items.len);
+    try testing.expectEqual(@as(usize, 3), chicken_postings.docs.items.len);
 
     // "pasta" should be in 2 documents (recipes 2, 3)
     const pasta_postings = ri.dictionary.get("pasta").?;
-    try std.testing.expectEqual(@as(usize, 2), pasta_postings.docs.items.len);
+    try testing.expectEqual(@as(usize, 2), pasta_postings.docs.items.len);
 
     // "truffle" should be in 1 document (recipe 3)
     const truffle_postings = ri.dictionary.get("truffle").?;
-    try std.testing.expectEqual(@as(usize, 1), truffle_postings.docs.items.len);
+    try testing.expectEqual(@as(usize, 1), truffle_postings.docs.items.len);
 
     // Verify document frequencies using ranking module
-    try std.testing.expectEqual(@as(usize, 5), ranking.df(&salt_postings));
-    try std.testing.expectEqual(@as(usize, 3), ranking.df(&chicken_postings));
-    try std.testing.expectEqual(@as(usize, 2), ranking.df(&pasta_postings));
-    try std.testing.expectEqual(@as(usize, 1), ranking.df(&truffle_postings));
+    try testing.expectEqual(@as(usize, 5), ranking.df(&salt_postings));
+    try testing.expectEqual(@as(usize, 3), ranking.df(&chicken_postings));
+    try testing.expectEqual(@as(usize, 2), ranking.df(&pasta_postings));
+    try testing.expectEqual(@as(usize, 1), ranking.df(&truffle_postings));
 
     // Verify IDF values using ranking module
     const salt_idf = ranking.idf(&salt_postings, ri.doc_count);
@@ -269,20 +287,20 @@ test "IDF ranking dataset" {
     const truffle_idf = ranking.idf(&truffle_postings, ri.doc_count);
 
     // IDF should increase as terms become rarer
-    try std.testing.expect(salt_idf < chicken_idf);
-    try std.testing.expect(chicken_idf < pasta_idf);
-    try std.testing.expect(pasta_idf < truffle_idf);
+    try testing.expect(salt_idf < chicken_idf);
+    try testing.expect(chicken_idf < pasta_idf);
+    try testing.expect(pasta_idf < truffle_idf);
 
     // salt IDF should be 0 (appears in all docs)
-    try std.testing.expectApproxEqAbs(@as(f64, 0.0), salt_idf, 0.001);
+    try testing.expectApproxEqAbs(@as(f64, 0.0), salt_idf, 0.001);
 
     // truffle IDF should be highest (log(5/1) ≈ 1.609)
-    try std.testing.expectApproxEqAbs(@as(f64, 1.609), truffle_idf, 0.01);
+    try testing.expectApproxEqAbs(@as(f64, 1.609), truffle_idf, 0.01);
 
-    std.debug.print("\n=== IDF Ranking Test Results ===\n", .{});
-    std.debug.print("Total documents: {d}\n", .{ri.doc_count});
-    std.debug.print("salt:    df={d}, IDF={d:.3}\n", .{ ranking.df(&salt_postings), salt_idf });
-    std.debug.print("chicken: df={d}, IDF={d:.3}\n", .{ ranking.df(&chicken_postings), chicken_idf });
-    std.debug.print("pasta:   df={d}, IDF={d:.3}\n", .{ ranking.df(&pasta_postings), pasta_idf });
-    std.debug.print("truffle: df={d}, IDF={d:.3}\n", .{ ranking.df(&truffle_postings), truffle_idf });
+    debug.print("\n=== IDF Ranking Test Results ===\n", .{});
+    debug.print("Total documents: {d}\n", .{ri.doc_count});
+    debug.print("salt:    df={d}, IDF={d:.3}\n", .{ ranking.df(&salt_postings), salt_idf });
+    debug.print("chicken: df={d}, IDF={d:.3}\n", .{ ranking.df(&chicken_postings), chicken_idf });
+    debug.print("pasta:   df={d}, IDF={d:.3}\n", .{ ranking.df(&pasta_postings), pasta_idf });
+    debug.print("truffle: df={d}, IDF={d:.3}\n", .{ ranking.df(&truffle_postings), truffle_idf });
 }
