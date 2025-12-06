@@ -1,7 +1,8 @@
 const std = @import("std");
 
 pub const Field = enum {
-    title,
+    title, // individual words from title
+    title_phrase, // full title as phrase (e.g., "scrambled eggs")
     tags,
     ingredients,
 };
@@ -9,13 +10,13 @@ pub const Field = enum {
 pub const FieldSet = std.EnumSet(Field);
 
 pub const Posting = struct {
-    doc_id: u32,
+    document_id: u32,
     term_frequency: u8,
     fields: FieldSet,
 
     pub fn init(id: u32, field: Field) Posting {
         return Posting{
-            .doc_id = id,
+            .document_id = id,
             .term_frequency = 0,
             .fields = FieldSet.initOne(field),
         };

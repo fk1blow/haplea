@@ -3,6 +3,7 @@ const posting = @import("reverse_index/posting.zig");
 const ranking = @import("reverse_index/ranking.zig");
 const markdown = @import("markdown/parser.zig");
 const recipeParser = @import("recipe_parser.zig");
+const stop_words = @import("text/stop_words.zig");
 
 const Allocator = std.mem.Allocator;
 const StringHashMap = std.StringHashMap;
@@ -36,18 +37,26 @@ pub const ReverseIndex = struct {
 
     pub fn indexDocument(
         self: *ReverseIndex,
-        document: struct { doc_id: u32, data: recipeParser.RecipeData },
+        document: struct { document_id: u32, data: recipeParser.RecipeData },
     ) !void {
         var postings_map = StringHashMap(posting.Posting).init(self.allocator);
         defer postings_map.deinit();
 
-        try updateDocumentPostings(&postings_map, document.data.title, document.doc_id, .title);
-        try updateDocumentPostings(&postings_map, document.data.tags, document.doc_id, .tags);
-        try updateDocumentPostings(&postings_map, document.data.ingredients, document.doc_id, .ingredients);
+        try updateDocumentPostings(&postings_map, document.data.title, document.document_id, .title);
+        try updateDocumentPostings(&postings_map, document.data.tags, document.document_id, .tags);
+        try updateDocumentPostings(&postings_map, document.data.ingredients, document.document_id, .ingredients);
 
         var postings_map_it = postings_map.iterator();
         while (postings_map_it.next()) |entry| {
             try self.updateIndex(entry.key_ptr.*, entry.value_ptr.*);
+        }
+
+        // Index full normalized title as phrase (no stop word filtering for phrases)
+        if (document.data.title_phrase.len > 0) {
+            try self.updateIndex(
+                document.data.title_phrase,
+                posting.Posting.init(document.document_id, .title_phrase),
+            );
         }
 
         self.doc_count += 1;
@@ -56,15 +65,20 @@ pub const ReverseIndex = struct {
     fn updateDocumentPostings(
         postings_map: *StringHashMap(posting.Posting),
         terms_list: ArrayList([]const u8),
-        doc_id: u32,
+        document_id: u32,
         field: posting.Field,
     ) !void {
         for (terms_list.items) |term| {
+            // Skip stop words for word-based indexing
+            if (stop_words.isStopWord(term)) {
+                continue;
+            }
+
             const gop = try postings_map.getOrPut(term);
 
             if (!gop.found_existing) {
                 gop.key_ptr.* = term;
-                gop.value_ptr.* = posting.Posting.init(doc_id, field);
+                gop.value_ptr.* = posting.Posting.init(document_id, field);
             } else {
                 gop.value_ptr.addField(field);
             }
@@ -90,7 +104,7 @@ pub const ReverseIndex = struct {
             debug.print("# {s} ({d} postings)\n", .{ term, postings.len });
             for (postings) |item| {
                 debug.print("   ─ doc:{d}  freq:{d}  fields:", .{
-                    item.doc_id,
+                    item.document_id,
                     item.term_frequency,
                 });
                 var iter = item.fields.iterator();
@@ -107,15 +121,16 @@ pub const ReverseIndex = struct {
 test "populate the index and debug it" {
     const allocator = testing.allocator;
 
+    // Recipe with stop words: "the", "with", "a", "of", "and"
     const source =
-        \\# Scrambled Eggs
+        \\# The Scrambled Eggs
         \\
         \\## tags
-        \\breakfast, easy, eggs, butter
+        \\breakfast, easy and quick, eggs, butter
         \\
         \\## ingredients
-        \\- eggs
-        \\- butter
+        \\- a few eggs
+        \\- butter with salt
         \\- oil
         \\- bacon
     ;
@@ -130,8 +145,9 @@ test "populate the index and debug it" {
 
     var ri = ReverseIndex.init(allocator);
     defer ri.deinit();
-    try ri.indexDocument(.{ .doc_id = 0, .data = recipe_data });
+    try ri.indexDocument(.{ .document_id = 0, .data = recipe_data });
 
+    // Recipe with stop words: "or", "with", "some"
     const source2 =
         \\# Pasta Carbonara
         \\
@@ -139,11 +155,11 @@ test "populate the index and debug it" {
         \\pasta, italian, spachetti, carbonara, butter
         \\
         \\## ingredients
-        \\- pasta
+        \\- some pasta
         \\- butter
         \\- oil
         \\- guanciale or bacon
-        \\- parmezan
+        \\- parmezan with pepper
         \\- eggs
     ;
 
@@ -155,7 +171,33 @@ test "populate the index and debug it" {
     defer recipe_parser2.deinit();
     const recipe_data2 = try recipe_parser2.parse(lines2);
 
-    try ri.indexDocument(.{ .doc_id = 1, .data = recipe_data2 });
+    try ri.indexDocument(.{ .document_id = 1, .data = recipe_data2 });
+
+    // Verify stop words are NOT indexed
+    try testing.expect(ri.dictionary.get("the") == null);
+    try testing.expect(ri.dictionary.get("a") == null);
+    try testing.expect(ri.dictionary.get("and") == null);
+    try testing.expect(ri.dictionary.get("with") == null);
+    try testing.expect(ri.dictionary.get("or") == null);
+    try testing.expect(ri.dictionary.get("some") == null);
+    try testing.expect(ri.dictionary.get("few") == null);
+
+    // Verify content words ARE indexed
+    try testing.expect(ri.dictionary.get("scrambled") != null);
+    try testing.expect(ri.dictionary.get("eggs") != null);
+    try testing.expect(ri.dictionary.get("breakfast") != null);
+    try testing.expect(ri.dictionary.get("easy") != null);
+    try testing.expect(ri.dictionary.get("quick") != null);
+    try testing.expect(ri.dictionary.get("butter") != null);
+    try testing.expect(ri.dictionary.get("salt") != null);
+    try testing.expect(ri.dictionary.get("pasta") != null);
+    try testing.expect(ri.dictionary.get("guanciale") != null);
+    try testing.expect(ri.dictionary.get("pepper") != null);
+
+    // Verify title phrases are indexed (with stop words preserved)
+    try testing.expect(ri.dictionary.get("the scrambled eggs") != null);
+    try testing.expect(ri.dictionary.get("pasta carbonara") != null);
+
     ri.debugIndex();
 }
 
@@ -252,7 +294,7 @@ test "IDF ranking dataset" {
         defer recipe_parser.deinit();
         const recipe_data = try recipe_parser.parse(lines);
 
-        try ri.indexDocument(.{ .doc_id = @intCast(i), .data = recipe_data });
+        try ri.indexDocument(.{ .document_id = @intCast(i), .data = recipe_data });
     }
 
     // Verify doc_count is tracked correctly
@@ -303,4 +345,55 @@ test "IDF ranking dataset" {
     debug.print("chicken: df={d}, IDF={d:.3}\n", .{ ranking.df(&chicken_postings), chicken_idf });
     debug.print("pasta:   df={d}, IDF={d:.3}\n", .{ ranking.df(&pasta_postings), pasta_idf });
     debug.print("truffle: df={d}, IDF={d:.3}\n", .{ ranking.df(&truffle_postings), truffle_idf });
+}
+
+test "stop words are filtered and title phrase is indexed" {
+    const allocator = testing.allocator;
+
+    const source =
+        \\# The Best Scrambled Eggs
+        \\
+        \\## tags
+        \\breakfast, easy
+        \\
+        \\## ingredients
+        \\- eggs
+        \\- butter or oil
+    ;
+
+    var parser = markdown.Parser.init(allocator, source);
+    defer parser.deinit();
+    const lines = try parser.parse();
+
+    var recipe_parser = recipeParser.RecipeParser.init(allocator);
+    defer recipe_parser.deinit();
+    const recipe_data = try recipe_parser.parse(lines);
+
+    var ri = ReverseIndex.init(allocator);
+    defer ri.deinit();
+    try ri.indexDocument(.{ .document_id = 0, .data = recipe_data });
+
+    // Stop words should NOT be in the index
+    try testing.expect(ri.dictionary.get("the") == null);
+    try testing.expect(ri.dictionary.get("or") == null);
+
+    // Regular words should be indexed
+    try testing.expect(ri.dictionary.get("best") != null);
+    try testing.expect(ri.dictionary.get("scrambled") != null);
+    try testing.expect(ri.dictionary.get("eggs") != null);
+    try testing.expect(ri.dictionary.get("butter") != null);
+    try testing.expect(ri.dictionary.get("oil") != null);
+
+    // Title phrase should be indexed (normalized, lowercase)
+    const title_phrase_postings = ri.dictionary.get("the best scrambled eggs");
+    try testing.expect(title_phrase_postings != null);
+
+    // Verify title phrase has the correct field
+    const posting_item = title_phrase_postings.?.docs.items[0];
+    try testing.expect(posting_item.fields.contains(.title_phrase));
+    try testing.expect(!posting_item.fields.contains(.title)); // phrase is not word
+
+    // Verify individual title words have .title field
+    const best_postings = ri.dictionary.get("best").?;
+    try testing.expect(best_postings.docs.items[0].fields.contains(.title));
 }

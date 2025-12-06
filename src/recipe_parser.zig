@@ -53,6 +53,7 @@ const ExtractionState = struct {
 pub const RecipeData = struct {
     allocator: mem.Allocator,
     title: std.ArrayList([]const u8),
+    title_phrase: []const u8, // normalized full title for phrase matching
     tags: std.ArrayList([]const u8),
     ingredients: std.ArrayList([]const u8),
 
@@ -60,12 +61,16 @@ pub const RecipeData = struct {
         return .{
             .allocator = allocator,
             .title = std.ArrayList([]const u8){},
+            .title_phrase = "",
             .tags = std.ArrayList([]const u8){},
             .ingredients = std.ArrayList([]const u8){},
         };
     }
 
     pub fn deinit(self: *RecipeData) void {
+        if (self.title_phrase.len > 0) {
+            self.allocator.free(self.title_phrase);
+        }
         for (self.title.items) |item| {
             self.allocator.free(item);
         }
@@ -166,6 +171,10 @@ pub const RecipeParser = struct {
 
         if (line.type.Heading.level == 1) {
             self.state.transition(.Title);
+            // Store normalized title phrase for phrase matching
+            const trimmed = mem.trim(u8, heading_text, " \t\r\n");
+            self.data.title_phrase = try std.ascii.allocLowerString(self.allocator, trimmed);
+            // Also store individual words
             var iter = mem.tokenizeScalar(u8, heading_text, ' ');
             while (iter.next()) |word| {
                 try self.appendToCurrentSection(word);
