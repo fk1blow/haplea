@@ -6,7 +6,7 @@ pub const AppPathsError = error{HomePathNotFound};
 
 pub fn getDocumentsPath(gpa: Allocator) ![]const u8 {
     const home_path = getEnv("HOME") orelse return AppPathsError.HomePathNotFound;
-    return std.fmt.allocPrint(gpa, "{s}/{s}", .{ home_path, DocumentsPath });
+    return std.fmt.allocPrint(gpa, "{s}{s}", .{ home_path, DocumentsPath });
 }
 
 const DocumentsPath = "/Documents/Haplea";
@@ -26,6 +26,5 @@ test "getDocumentsPath returns path" {
     defer allocator.free(path);
 
     try std.testing.expect(path.len > 0);
-    try std.testing.expect(std.mem.startsWith(u8, path, "/Users/"));
-    try std.testing.expect(std.mem.endsWith(u8, path, "/Documents/Haplea"));
+    try std.testing.expect(std.mem.eql(u8, path, "/Users/someone/Documents/Haplea"));
 }
