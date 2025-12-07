@@ -43,7 +43,7 @@ pub const Postings = struct {
         try self.docs.append(self.allocator, item);
     }
 
-    pub fn document_frequency(self: *const Postings) usize {
+    pub fn documentFrequency(self: *const Postings) usize {
         return self.docs.items.len;
     }
 };
