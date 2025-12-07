@@ -9,3 +9,7 @@
     - get the user's document path
         - how do we get all the recipes without using too much memory?
     - feed each document/recipe to the reverse index
+- use the `main` module as orchestrator
+    - build the index
+        - rebuilding or diffing not important atm
+    - starts the http server
