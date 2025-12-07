@@ -21,18 +21,6 @@
         - update the `postings_map` for each section of a document's RecipeData
         - iterate over the `postings_map` and for each entry, update the index' dictionary itself(upsert)
 
-## Todo
-
-- storing user files and app config?
-    - recupe stored in `~/Documents/Haplea`
-    - config stored in `~/Library/Application Support/Haplea/`
-        - not really needed atm
-    - define a `paths` module
-- feed the dictionary with actual files
-    - get the user's document path
-        - how do we get all the recipes without using too much memory?
-    - feed each document/recipe to the reverse index
-
 ## Ngrams
 
 - ngram generation
