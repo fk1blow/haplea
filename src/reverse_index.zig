@@ -316,12 +316,6 @@ test "IDF ranking dataset" {
     const truffle_postings = ri.dictionary.get("truffle").?;
     try testing.expectEqual(@as(usize, 1), truffle_postings.docs.items.len);
 
-    // Verify document frequencies using Postings method
-    try testing.expectEqual(@as(usize, 5), salt_postings.documentFrequency());
-    try testing.expectEqual(@as(usize, 3), chicken_postings.documentFrequency());
-    try testing.expectEqual(@as(usize, 2), pasta_postings.documentFrequency());
-    try testing.expectEqual(@as(usize, 1), truffle_postings.documentFrequency());
-
     // Verify IDF values using ranking module
     const salt_idf = ranking.idf(&salt_postings, ri.doc_count);
     const chicken_idf = ranking.idf(&chicken_postings, ri.doc_count);
