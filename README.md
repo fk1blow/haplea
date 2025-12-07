@@ -1,100 +1,138 @@
 # Haplea
 
-A recipe manager built with zig.
+A recipe manager built with Zig and React. Compiles to a single binary with embedded frontend.
+
+## Features
+
+Store and search food recipes locally. Write recipes in markdown, search by ingredients or tags, and access everything through a simple web UI.
+Compiles to a single binary with the frontend embedded.
 
 ## Project Structure
 
 ```
 haplea/
-├── build.zig                 # Build configuration
-├── build.zig.zon             # Package dependencies
+├── build.zig              # Build configuration
+├── build.zig.zon          # Package dependencies (http.zig)
 ├── src/
-│   ├── main.zig              # Entry point with CLI
-│   ├── config.zig            # Configuration and CLI args
-│   ├── discovery/            # mDNS service discovery
-│   ├── server/               # HTTP server
-│   ├── parser/               # Markdown parsing
-│   └── common/               # Shared types and utilities
-├── frontend/                 # React + TypeScript web client
+│   ├── main.zig           # HTTP server entry point
+│   ├── embedded_assets.zig # Embedded frontend files
+│   ├── recipe_parser.zig  # Recipe markdown parsing
+│   ├── reverse_index.zig  # Full-text search indexing
+│   ├── markdown/          # Generic markdown parser
+│   ├── text/              # Text processing utilities
+│   └── static/            # Embedded frontend assets (generated)
+├── frontend/              # React + TypeScript + Tailwind
 │   ├── src/
-│   ├── libs/                 # Frontend shared utilities
-│   └── package.json
-└── scripts/                  # Build and automation scripts
+│   │   ├── App.tsx        # Main recipe display component
+│   │   └── index.css      # Tailwind styles
+│   ├── package.json
+│   ├── tailwind.config.js
+│   └── vite.config.ts
+└── docs/
+    └── recipe-examples/   # Example recipe files
 ```
 
-## Features
+## Prerequisites
 
-### mDNS Service Discovery
+- **Zig** 0.13+ ([ziglang.org](https://ziglang.org/download/))
+- **Bun** 1.0+ ([bun.sh](https://bun.sh/)) - for frontend development
 
-Discover and advertise services on the local network.
+## Build Workflow
 
-### HTTP Server
-
-Simple HTTP server serving a web interface and API endpoints.
-
-### Markdown Parsing
-
-Parse markdown files for recipe storage and rendering.
-
-## Development
-
-### Prerequisites
-
-- Zig 0.15+ (install from [ziglang.org](https://ziglang.org/download/))
-- Node.js 18+ (for frontend development)
-
-### Building and Running
+### Quick Start
 
 ```bash
-# Build the project
+# 1. Install frontend dependencies
+cd frontend && bun install && cd ..
+
+# 2. Build frontend
+cd frontend && bun run build && cd ..
+
+# 3. Copy assets for embedding
+mkdir -p src/static/assets
+cp frontend/dist/index.html src/static/
+cp frontend/dist/assets/* src/static/assets/
+
+# 4. Build Zig binary
 zig build
 
-# Build in release mode
-zig build -Doptimize=ReleaseFast
-
-# Run the application (parses hardcoded example recipe)
-zig build run
-
-# Run with options (when server features are implemented)
-zig build run -- --enable-discovery --port 3000
-
-# Clean build cache
-rm -rf zig-cache zig-out
+# 5. Run
+./zig-out/bin/haplea
 ```
 
-### Testing
+Then open http://127.0.0.1:3000
+
+### Development
+
+```bash
+# Frontend dev server (hot reload)
+cd frontend && bun run dev
+
+# Run Zig tests
+zig build test
+
+# Build release binary
+zig build -Doptimize=ReleaseFast
+```
+
+### Full Rebuild
+
+```bash
+# Clean everything
+rm -rf zig-out .zig-cache frontend/dist frontend/node_modules src/static
+
+# Rebuild from scratch
+cd frontend && bun install && bun run build && cd ..
+mkdir -p src/static/assets
+cp frontend/dist/index.html src/static/
+cp frontend/dist/assets/* src/static/assets/
+zig build
+```
+
+## Recipe Format
+
+Recipes are markdown files with specific sections:
+
+```markdown
+# Recipe Title
+
+Short description of the dish.
+
+## category
+
+mains
+
+## tags
+
+italian, pasta, quick, comfort-food
+
+## ingredients
+
+- 400g spaghetti
+- 4 large eggs
+- 100g pecorino romano
+
+## instructions
+
+Cook pasta in salted water. Mix eggs with cheese...
+
+## notes
+
+Optional tips and variations.
+```
+
+**Required sections**: title (h1), tags, ingredients
+
+## Tests
 
 ```bash
 # Run all tests
 zig build test
 
-# Run tests with output
-zig build test --summary all
-```
-
-**Current test coverage:**
-- `src/markdown.zig` - 6 tests for generic markdown parsing
-- `src/recipe_parser.zig` - 10 tests for recipe parsing and error handling
-
-### Frontend Development
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-## CLI Usage
-
-```bash
-haplea [OPTIONS]
-
-Options:
-  --enable-discovery     Enable mDNS service discovery
-  --enable-server        Enable HTTP server (default: true)
-  -p, --port <PORT>      HTTP server port (default: 3000)
-  --service-name <NAME>  Service name for mDNS (default: haplea)
-  -h, --help             Print help
+# Test coverage:
+# - src/markdown/parser.zig - Markdown parsing
+# - src/recipe_parser.zig - Recipe extraction
+# - src/reverse_index.zig - Search indexing
 ```
 
 ## License
