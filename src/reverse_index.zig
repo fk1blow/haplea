@@ -341,6 +341,146 @@ test "IDF ranking dataset" {
     debug.print("truffle: df={d}, IDF={d:.3}\n", .{ truffle_postings.documentFrequency(), truffle_idf });
 }
 
+test "BM25 ranking" {
+    // BM25 = IDF × (tf × (k1 + 1)) / (tf + k1)
+    // This test demonstrates:
+    // 1. Rare term boost: rare terms score higher than common terms
+    // 2. TF saturation: higher TF doesn't linearly increase score (k1 effect)
+    // 3. Combined IDF × TF scoring
+
+    const allocator = testing.allocator;
+
+    // Reuse IDF dataset: 5 recipes with controlled term distributions
+    // "salt" in 5/5 docs → low IDF (common term)
+    // "chicken" in 3/5 docs → medium IDF
+    // "pasta" in 2/5 docs → higher IDF
+    // "truffle" in 1/5 docs → highest IDF (rare term)
+
+    const recipe1 =
+        \\# Chicken Salad
+        \\## tags
+        \\salad, healthy, chicken
+        \\## ingredients
+        \\- chicken breast
+        \\- salt
+        \\- lettuce
+    ;
+
+    const recipe2 =
+        \\# Chicken Pasta
+        \\## tags
+        \\pasta, italian, chicken
+        \\## ingredients
+        \\- chicken breast
+        \\- pasta
+        \\- salt
+    ;
+
+    const recipe3 =
+        \\# Truffle Pasta
+        \\## tags
+        \\pasta, luxury, truffle
+        \\## ingredients
+        \\- pasta
+        \\- truffle
+        \\- salt
+    ;
+
+    const recipe4 =
+        \\# Grilled Chicken
+        \\## tags
+        \\dinner, healthy, chicken
+        \\## ingredients
+        \\- chicken breast
+        \\- salt
+        \\- pepper
+    ;
+
+    const recipe5 =
+        \\# Vegetable Soup
+        \\## tags
+        \\soup, vegetarian
+        \\## ingredients
+        \\- salt
+        \\- carrots
+        \\- onion
+    ;
+
+    var ri = ReverseIndex.init(allocator);
+    defer ri.deinit();
+
+    // Index all recipes
+    inline for (.{ recipe1, recipe2, recipe3, recipe4, recipe5 }, 0..) |source, i| {
+        var parser = markdown.Parser.init(allocator, source);
+        defer parser.deinit();
+        const lines = try parser.parse();
+
+        var recipe_parser = recipeParser.RecipeParser.init(allocator);
+        defer recipe_parser.deinit();
+        const recipe_data = try recipe_parser.parse(lines);
+
+        try ri.indexDocument(.{ .document_id = @intCast(i), .data = recipe_data });
+    }
+
+    // Get postings for each test term
+    const salt_postings = ri.dictionary.get("salt").?;
+    const chicken_postings = ri.dictionary.get("chicken").?;
+    const pasta_postings = ri.dictionary.get("pasta").?;
+    const truffle_postings = ri.dictionary.get("truffle").?;
+
+    // Calculate IDF values
+    const salt_idf = ranking.bm25idf(&salt_postings, ri.doc_count);
+    const chicken_idf = ranking.bm25idf(&chicken_postings, ri.doc_count);
+    const pasta_idf = ranking.bm25idf(&pasta_postings, ri.doc_count);
+    const truffle_idf = ranking.bm25idf(&truffle_postings, ri.doc_count);
+
+    // Calculate BM25 scores (assuming TF=1 for comparison)
+    const salt_bm25 = ranking.bm25TermScore(1, salt_idf);
+    const chicken_bm25 = ranking.bm25TermScore(1, chicken_idf);
+    const pasta_bm25 = ranking.bm25TermScore(1, pasta_idf);
+    const truffle_bm25 = ranking.bm25TermScore(1, truffle_idf);
+
+    // Test 1: Rare term boost - rarer terms should score higher
+    // truffle (1 doc) > pasta (2 docs) > chicken (3 docs) > salt (5 docs)
+    try testing.expect(truffle_bm25 > pasta_bm25);
+    try testing.expect(pasta_bm25 > chicken_bm25);
+    try testing.expect(chicken_bm25 > salt_bm25);
+
+    // Test 2: TF saturation - TF=3 should NOT be 3x the score of TF=1
+    // This demonstrates the k1 parameter preventing linear scaling
+    const tf1_score = ranking.bm25TermScore(1, truffle_idf);
+    const tf3_score = ranking.bm25TermScore(3, truffle_idf);
+
+    // With k1=1.2: TF=1 gives factor of 1*(2.2)/(1+1.2) = 1.0
+    //              TF=3 gives factor of 3*(2.2)/(3+1.2) = 1.57
+    // So TF=3 is only ~1.57x TF=1, not 3x
+    try testing.expect(tf3_score < 3.0 * tf1_score);
+    try testing.expect(tf3_score > tf1_score); // But still higher
+
+    // Test 3: Common terms (salt in all docs) should have low/zero BM25 score
+    // bm25idf for term in all docs approaches 0
+    try testing.expectApproxEqAbs(@as(f64, 0.0), salt_bm25, 0.1);
+
+    debug.print("\n=== BM25 Ranking Test Results ===\n", .{});
+    debug.print("Total documents: {d}\n\n", .{ri.doc_count});
+
+    debug.print("IDF values (rare terms have higher IDF):\n", .{});
+    debug.print("  salt (df=5):    IDF={d:.4}\n", .{salt_idf});
+    debug.print("  chicken (df=3): IDF={d:.4}\n", .{chicken_idf});
+    debug.print("  pasta (df=2):   IDF={d:.4}\n", .{pasta_idf});
+    debug.print("  truffle (df=1): IDF={d:.4}\n\n", .{truffle_idf});
+
+    debug.print("BM25 scores (TF=1):\n", .{});
+    debug.print("  salt:    {d:.4}\n", .{salt_bm25});
+    debug.print("  chicken: {d:.4}\n", .{chicken_bm25});
+    debug.print("  pasta:   {d:.4}\n", .{pasta_bm25});
+    debug.print("  truffle: {d:.4}\n\n", .{truffle_bm25});
+
+    debug.print("TF saturation (k1={d:.1}):\n", .{ranking.BM25_K1});
+    debug.print("  truffle TF=1: {d:.4}\n", .{tf1_score});
+    debug.print("  truffle TF=3: {d:.4} (only {d:.2}x, not 3x)\n", .{ tf3_score, tf3_score / tf1_score });
+}
+
 test "stop words are filtered and title phrase is indexed" {
     const allocator = testing.allocator;
 
