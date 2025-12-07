@@ -1,6 +1,8 @@
 const posting = @import("posting.zig");
 
-// classic TF-IDF log(total_docs / doc_freq)
+// classic TF-IDF log(N / df)
+// - N: total number of documents
+// - df: document frequency(in how many documents the term appears)
 pub fn idf(postings: *const posting.Postings, total_docs: u32) f64 {
     const doc_freq = postings.documentFrequency();
     if (doc_freq == 0 or total_docs == 0) return 0;
