@@ -1,39 +1,52 @@
 # Indexing
 
-where do i start or what do i need to get started?
+- define the structure of the index
+    - postings
+        - `Field` a field withing a Posting
+            - title, title_phrase, tags, ingredients
+        - `Posting` which contains the reference and metadata
+            - document_id, term_frequency, fields(where it came from)
+        - `Postings` list which contains one or more Posting's
+- research into information retrival ranking
+    - added `document_frequency` helper function to the `Postings`
+    - use IDF Inverse Document Frequency
+    - use BM25 combined with BM25-IDF for ranking
+    - add tests to cover a few examples that combines both indexing and then ranking over terms in the index
+- build the reverse index
+    - `ReverseIndex.dictionary` StringHashMap(Postings)
+        - contains the map between a term(eg: salt, chicken, saffron) the occurences of a term, in how many documents, how many times, where in the document(`Posting.field`)
+    - have a `indexDocument` function, which takes in a document's id and a `RecipeData` struct
+    - the indexing is simple:
+        - build an intermediary hash map(`postings_map`) of the terms found in the current document(the one being indexed currently)
+        - update the `postings_map` for each section of a document's RecipeData
+        - iterate over the `postings_map` and for each entry, update the index' dictionary itself(upsert)
 
-1. trigram generation
-    - build an ngram function
-    - have edge padding using `$`
-    - word length is >= 4, generate trigram, otherwise keep as exact
-    - "soup" = ` ["$so","sou","oup","up$"]
+## Todo
 
-    - edge cases(empty string, single character, two characters)
+- storing user files and app config?
+    - recupe stored in `~/Documents/Haplea`
+    - config stored in `~/Library/Application Support/Haplea/`
+        - not really needed atm
+    - define a `paths` module
+- feed the dictionary with actual files
+    - get the user's document path
+        - how do we get all the recipes without using too much memory?
+    - feed each document/recipe to the reverse index
 
-2. define reverse index structure(dictionary, posting list)
-    - define structure `{ "tri": [recipe_id1, recipe_id2, ...], "rig": [...], ... }`
-        - posting list contains list of recie ids, maybe weight by number of occurences
-3. unit tests
-    - Trigram generation: "chicken" produces expected trigrams
-    - Short strings: "eg" behavior (produces only one trigram "egg" if word is "egg")
-    - Edge cases: empty strings, single characters, two characters
-    - Index building: multiple recipes with overlapping ingredients produce correct inverted index
-    - Posting lists are deduplicated per trigram
-    - Case insensitivity: "Chicken" and "chicken" produce same trigrams
-4. build the indexing functionality
-    - extract trigrams from recipes
-        - for each recipe, extract trigrams from title + ingredients + tags
-    - use the recipe extractor's result
-    - Consider: deduplicating recipe IDs in posting lists
-        - same recipe shouldn't appear twice for the same trigram even if "tomato" appears in both title and ingredients
+## Ngrams
 
-## metadata extraction
+- ngram generation
+    - added `ngrams.zig` module and played around with generating trigrams from recipe data items/terms
+        - have edge padding using `$`
+        - word length is >= 4, generate trigram, otherwise keep as exact
+        - "soup" = ` ["$so","sou","oup","up$"]
+        - edge cases(empty string, single character, two characters)
 
-We need some sort of ranking so that we can differentiate between a token found on the second
-paragraph, and a token found on the recipe's title.
+## Field ranking
 
-A document that matches a token on the recipe's title would be ranked higher
-than one which contains the token at the end of the recipe.
+I need some sort of ranking that would differentiate between a query which contains the terms (or the whole phrase) found in the recipe's title, vs a query that finds the terms scattered(one in the Ingredients section, another one in the tags, etc).
+
+Consider bm25F for this(https://sourcegraph.com/blog/keeping-it-boring-and-relevant-with-bm25f)
 
 Ranking is: **title > tags > ingredients**
 
