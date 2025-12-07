@@ -34,7 +34,7 @@ haplea/
 
 ## Prerequisites
 
-- **Zig** 0.13+ ([ziglang.org](https://ziglang.org/download/))
+- **Zig** 0.15+ ([ziglang.org](https://ziglang.org/download/))
 - **Bun** 1.0+ ([bun.sh](https://bun.sh/)) - for frontend development
 
 ## Build Workflow
