@@ -61,12 +61,12 @@ pub const Line = struct {
     }
 };
 
-pub const MarkdownParser = struct {
+pub const Parser = struct {
     allocator: mem.Allocator,
     source: []const u8,
     lines: std.ArrayList(Line),
 
-    pub fn init(allocator: mem.Allocator, source: []const u8) MarkdownParser {
+    pub fn init(allocator: mem.Allocator, source: []const u8) Parser {
         return .{
             .allocator = allocator,
             .source = source,
@@ -74,11 +74,11 @@ pub const MarkdownParser = struct {
         };
     }
 
-    pub fn deinit(self: *MarkdownParser) void {
+    pub fn deinit(self: *Parser) void {
         self.lines.deinit(self.allocator);
     }
 
-    pub fn parse(self: *MarkdownParser) ![]Line {
+    pub fn parse(self: *Parser) ![]Line {
         var it = mem.splitScalar(u8, self.source, '\n');
         var position: usize = 0;
 
@@ -145,7 +145,7 @@ test "Line classification - paragraphs" {
     try std.testing.expectEqual(LineType.Paragraph, @as(std.meta.Tag(LineType), para.type));
 }
 
-test "MarkdownParser - full document" {
+test "Parser - full document" {
     const allocator = std.testing.allocator;
 
     const source =
@@ -157,7 +157,7 @@ test "MarkdownParser - full document" {
         \\  - Nested item
     ;
 
-    var parser = MarkdownParser.init(allocator, source);
+    var parser = Parser.init(allocator, source);
     defer parser.deinit();
 
     const lines = try parser.parse();

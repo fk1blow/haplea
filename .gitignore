@@ -3,14 +3,16 @@
 zig-cache/
 zig-out/
 
-# Node
-/node_modules
-/dist
+# Frontend
+frontend/node_modules/
+frontend/dist/
+src/static/
 
 # IDE
-.vscode
-.idea
+.vscode/
+.idea/
 
 # Misc
 .DS_Store
 .env
+*.log

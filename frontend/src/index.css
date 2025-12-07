@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply bg-dark-bg text-dark-text antialiased;
+  }
+
+  body {
+    @apply min-h-screen;
+  }
+}
+
+@layer components {
+  .recipe-card {
+    @apply bg-dark-surface border border-dark-border rounded-lg p-6;
+  }
+
+  .tag {
+    @apply inline-block px-2 py-1 text-xs font-medium rounded-md
+           bg-dark-border text-dark-text-secondary;
+  }
+
+  .ingredient-item {
+    @apply flex items-start gap-3 py-2 border-b border-dark-border last:border-0;
+  }
+}

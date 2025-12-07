@@ -4,6 +4,12 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    // http.zig dependency
+    const httpz = b.dependency("httpz", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
     // Executable
     const exe = b.addExecutable(.{
         .name = "haplea",
@@ -11,6 +17,9 @@ pub fn build(b: *std.Build) void {
             .root_source_file = b.path("src/main.zig"),
             .target = target,
             .optimize = optimize,
+            .imports = &.{
+                .{ .name = "httpz", .module = httpz.module("httpz") },
+            },
         }),
     });
 
@@ -26,7 +35,7 @@ pub fn build(b: *std.Build) void {
     // Tests for markdown parser module
     const markdown_tests = b.addTest(.{
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/markdown.zig"),
+            .root_source_file = b.path("src/markdown/parser.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -34,10 +43,10 @@ pub fn build(b: *std.Build) void {
 
     const run_markdown_tests = b.addRunArtifact(markdown_tests);
 
-    // Tests for recipe extractor module
+    // Tests for recipe parser module
     const recipe_tests = b.addTest(.{
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/recipe_extractor.zig"),
+            .root_source_file = b.path("src/recipe_parser.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -45,7 +54,19 @@ pub fn build(b: *std.Build) void {
 
     const run_recipe_tests = b.addRunArtifact(recipe_tests);
 
+    // Tests for reverse index module
+    const reverse_index_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/reverse_index.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+
+    const run_reverse_index_tests = b.addRunArtifact(reverse_index_tests);
+
     const test_step = b.step("test", "Run tests");
     test_step.dependOn(&run_markdown_tests.step);
     test_step.dependOn(&run_recipe_tests.step);
+    test_step.dependOn(&run_reverse_index_tests.step);
 }
