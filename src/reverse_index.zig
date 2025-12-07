@@ -316,11 +316,11 @@ test "IDF ranking dataset" {
     const truffle_postings = ri.dictionary.get("truffle").?;
     try testing.expectEqual(@as(usize, 1), truffle_postings.docs.items.len);
 
-    // Verify document frequencies using ranking module
-    try testing.expectEqual(@as(usize, 5), ranking.df(&salt_postings));
-    try testing.expectEqual(@as(usize, 3), ranking.df(&chicken_postings));
-    try testing.expectEqual(@as(usize, 2), ranking.df(&pasta_postings));
-    try testing.expectEqual(@as(usize, 1), ranking.df(&truffle_postings));
+    // Verify document frequencies using Postings method
+    try testing.expectEqual(@as(usize, 5), salt_postings.document_frequency());
+    try testing.expectEqual(@as(usize, 3), chicken_postings.document_frequency());
+    try testing.expectEqual(@as(usize, 2), pasta_postings.document_frequency());
+    try testing.expectEqual(@as(usize, 1), truffle_postings.document_frequency());
 
     // Verify IDF values using ranking module
     const salt_idf = ranking.idf(&salt_postings, ri.doc_count);
@@ -341,10 +341,10 @@ test "IDF ranking dataset" {
 
     debug.print("\n=== IDF Ranking Test Results ===\n", .{});
     debug.print("Total documents: {d}\n", .{ri.doc_count});
-    debug.print("salt:    df={d}, IDF={d:.3}\n", .{ ranking.df(&salt_postings), salt_idf });
-    debug.print("chicken: df={d}, IDF={d:.3}\n", .{ ranking.df(&chicken_postings), chicken_idf });
-    debug.print("pasta:   df={d}, IDF={d:.3}\n", .{ ranking.df(&pasta_postings), pasta_idf });
-    debug.print("truffle: df={d}, IDF={d:.3}\n", .{ ranking.df(&truffle_postings), truffle_idf });
+    debug.print("salt:    df={d}, IDF={d:.3}\n", .{ salt_postings.document_frequency(), salt_idf });
+    debug.print("chicken: df={d}, IDF={d:.3}\n", .{ chicken_postings.document_frequency(), chicken_idf });
+    debug.print("pasta:   df={d}, IDF={d:.3}\n", .{ pasta_postings.document_frequency(), pasta_idf });
+    debug.print("truffle: df={d}, IDF={d:.3}\n", .{ truffle_postings.document_frequency(), truffle_idf });
 }
 
 test "stop words are filtered and title phrase is indexed" {
