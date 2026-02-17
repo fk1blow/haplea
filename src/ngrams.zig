@@ -9,6 +9,8 @@ pub const Ngram = struct {
     trigrams: std.ArrayList([]const u8),
     allocator: std.mem.Allocator,
 
+    // Theres no point in having both an initializer and a pub function. The initializer would receive 
+    // only and allocator, leaving the `generateTrigrams` to use it and transform the provided text.
     pub fn init(text: []const u8, allocator: std.mem.Allocator) !Ngram {
         const padded_text = try padText(text, allocator);
         errdefer allocator.free(padded_text);
