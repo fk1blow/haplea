@@ -7,10 +7,10 @@ Theres not much to see, unfortunately, but it was a fun toy project which explor
 - building a reverse index
     - what is it
     - how to build one using zig
-- research on information retrieval, like ranking
+- research on information retrieval
     - bm25/idf
     - ranking
-    - ngrams
+    - ngrams and search
 - learning zig and having fun
 
 ## Prerequisites
