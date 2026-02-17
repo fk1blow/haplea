@@ -1,6 +1,6 @@
 # Haplea
 
-A _wannabe_ recipe manager built with Zig and React. ~Compiles~ It should compile to a single binary with embedded frontend.
+A _wannabe_ recipe manager built with Zig and React. ~Compiles~ It should have compile to a single binary with embedded frontend.
 
 Theres not much to see, unfortunately, but it was a fun toy project which explored a few interested topics:
 - parsing markdown
