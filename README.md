@@ -4,7 +4,7 @@ A _wannabe_ recipe manager built with Zig and React. ~Compiles~ It should compil
 
 Theres not much to see, unfortunately, but it was a fun toy project which explored a few interested topics:
 - parsing markdown
-- building a reverse indexing
+- building a reverse index
     - what is it
     - how to build one using zig
 - research on information retrieval, like ranking
